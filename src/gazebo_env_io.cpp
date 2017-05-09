@@ -12,8 +12,8 @@
 using namespace std;
 
 
-template <class StateType>
-GazeboEnvIO<StateType>::GazeboEnvIO(
+template <class StateType, class ActionType>
+RL::GazeboEnvIO<StateType, ActionType>::GazeboEnvIO(
     const std::string state_topic_name,
     const std::string action_topic_name,
     const std::string laser_topic_name,
@@ -28,8 +28,8 @@ GazeboEnvIO<StateType>::GazeboEnvIO(
 }
 
 
-template <class StateType>
-void GazeboEnvIO<StateType>::StateCallback(const StateType& msg){
+template <class StateType, class ActionType>
+void RL::GazeboEnvIO<StateType, ActionType>::StateCallback(const StateType& msg){
   StatePtrVector.push_back(msg);
   if (StatePtrVector.size() > 2)
   {

@@ -17,32 +17,37 @@
 #include <string>
 #include <iterator>
 
-template<class StateType>
-class GazeboEnvIO{
+namespace RL{
+  template<class StateType, class ActionType>
+    class GazeboEnvIO{
 
-  private:
-    ros::NodeHandle n_;
-    ros::Subscriber LaserSub; 
-    ros::Subscriber StateSub;
-    ros::Publisher ActionPub;
-    ros::ServiceServer PytorchService;
+      private:
+        ros::NodeHandle n_;
+        ros::Subscriber LaserSub; 
+        ros::Subscriber StateSub;
+        ros::Publisher ActionPub;
+        ros::ServiceServer PytorchService;
 
-    std::vector<StateType> StatePtrVector;
-    std::vector<sensor_msgs::LaserScan::ConstPtr> LaserPtrVector;
+        std::vector<StateType> StatePtrVector;
+        std::vector<sensor_msgs::LaserScan::ConstPtr> LaserPtrVector;
 
-    void StateCallback(const StateType& );
-    void LaserCallback(const sensor_msgs::LaserScan::ConstPtr&);
+        void StateCallback(const StateType& );
+        void LaserCallback(const sensor_msgs::LaserScan::ConstPtr&);
 
-    bool ServiceCallback(gym_style_gazebo::PytorchRL::Request&,
-        gym_style_gazebo::PytorchRL::Response&);
-    
-    float collision_th_;
-    bool CollisionCheck();
-  public:
-    GazeboEnvIO(
-        const std::string state_topic_name="/camera/depth/image_raw",
-        const std::string action_topic_name="/mobile",
-        const std::string laser_topic_name="/scan",
-        const std::string service_name="pytorch_service");
-};
+        bool ServiceCallback(gym_style_gazebo::PytorchRL::Request&,
+            gym_style_gazebo::PytorchRL::Response&);
+
+        float collision_th_;
+        bool CollisionCheck();
+      
+      public:
+        GazeboEnvIO(
+            const std::string state_topic_name="/camera/depth/image_raw",
+            const std::string action_topic_name="/mobile",
+            const std::string laser_topic_name="/scan",
+            const std::string service_name="pytorch_service",
+            const std::string node_name="node name",
+            const float sleeping_time=0.01);
+    };
+}
 #endif

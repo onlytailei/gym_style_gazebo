@@ -1,5 +1,6 @@
-float32[] actions
+geometry_msgs/Twist action
 bool reset
+
 -----
 sensor_msgs/Image state
 bool terminal
