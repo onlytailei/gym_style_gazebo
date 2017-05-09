@@ -1,0 +1,6 @@
+float32[] actions
+bool reset
+-----
+sensor_msgs/Image state
+bool terminal
+float32 reward
