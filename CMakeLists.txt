@@ -20,7 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 
 ## System dependencies are found with CMake's conventions
-find_package(Boost REQUIRED COMPONENTS system)
+#find_package(Boost REQUIRED COMPONENTS system)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -131,7 +131,7 @@ include_directories(
 include_directories(./include)
 
 # Declare a C++ library
-add_library(task_env_io src/task_env_io.cpp)
+#add_library(task_env_io src/task_env_io.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -141,7 +141,8 @@ add_library(task_env_io src/task_env_io.cpp)
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/gym_style_gazebo_node.cpp)
+add_executable(task_env_service src/start_service.cpp src/task_env_io.cpp)
+target_link_libraries(task_env_service ${catkin_LIBRARIES})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

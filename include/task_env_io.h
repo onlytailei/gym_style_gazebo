@@ -5,6 +5,9 @@
   > Created Time: Di 09 Mai 2017 18:44:43 CEST
  ************************************************************************/
 
+#ifndef _TASK_ENV_IO_H
+#define _TASK_ENV_IO_H
+
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -19,34 +22,40 @@
 namespace RL {
 
   template<typename topicType>
-  class GetNewTopic{
+    class GetNewTopic{
 
       public: std::vector<topicType> StateVector;
       private: ros::Subscriber StateSub;
-               void StateCallback(const topicType& msg_);
+               void StateCallback(const topicType& );
 
       public: 
-               GetNewTopic(ros::NodeHandlePtr rosNode_,
-                   const std::string topic_name);
-  };
+               GetNewTopic(ros::NodeHandlePtr, const std::string);
+    };
 
-  class TaskEnvIO : public GazeboEnvIO{
+  using STATE_1_TYPE = sensor_msgs::ImageConstPtr;
+  using STATE_2_TYPE = gazebo_msgs::ModelStates;
+  using ACTION_TYPE = geometry_msgs::Twist;
 
+  class TaskEnvIO : public RL::GazeboEnvIO{
     private:
       ros::Publisher ActionPub;
-      std::shared_ptr< RL::GetNewTopic<sensor_msgs::ImageConstPtr> >  state_1;
-      std::shared_ptr< RL::GetNewTopic<gazebo_msgs::ModelStates> > state_2;
+      std::shared_ptr<RL::GetNewTopic<RL::STATE_1_TYPE>> state_1;
+      std::shared_ptr<RL::GetNewTopic<RL::STATE_2_TYPE>> state_2;
       std::shared_ptr<RL::GetNewTopic<sensor_msgs::LaserScanConstPtr>> laser_scan;
-
+      
       const float sleeping_time_;
-      
-      virtual bool ServiceCallback(gym_style_gazebo::PytorchRL::Request&,
-            gym_style_gazebo::PytorchRL::Response&);
-      
+
+      virtual bool ServiceCallback(
+          gym_style_gazebo::PytorchRL::Request&,
+          gym_style_gazebo::PytorchRL::Response&);
+
       virtual float rewardCalculate() const;
       virtual bool terminalCheck() const;
       virtual bool reset() const;
-
+      
+      bool collision_check();
+      bool target_check();
+      float real_time_position_speed();
     public: 
       TaskEnvIO(
           const std::string service_name="pytorch_io_service",
@@ -55,3 +64,4 @@ namespace RL {
   };
 }
 
+#endif

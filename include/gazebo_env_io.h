@@ -13,13 +13,6 @@
 #include <thread>
 #include <gym_style_gazebo/PytorchRL.h>
 
-// TODO build a base class
-// with two functions
-// rewardCal
-// terminalCheck
-
-// TODO build a inherit class to get that
-
 namespace RL{
   
   class GazeboEnvIO{
@@ -28,11 +21,11 @@ namespace RL{
       ros::NodeHandlePtr rosNode;
       ros::ServiceServer PytorchService;
       
-      GazeboEnvIO( 
-          const std::string node_name="gazebo_env_io");
+      GazeboEnvIO(const std::string node_name="gazebo_env_io")
+        :rosNode(new ros::NodeHandle(node_name)){};
       
       virtual bool ServiceCallback(gym_style_gazebo::PytorchRL::Request&,
-            gym_style_gazebo::PytorchRL::Response&);
+            gym_style_gazebo::PytorchRL::Response&) =0;
 
       virtual float rewardCalculate() const =0; 
       
@@ -42,9 +35,6 @@ namespace RL{
   };
 }
 
-RL::GazeboEnvIO::GazeboEnvIO( 
-          const std::string node_name):
-  rosNode(new ros::NodeHandle(node_name)){
-}
-
 #endif
+
+
