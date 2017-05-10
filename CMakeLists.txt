@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
     std_msgs
     sensor_msgs
     geometry_msgs
+    gazebo_msgs
     cv_bridge
     message_generation
 )
@@ -76,6 +77,7 @@ generate_messages(
   std_msgs  # Or other packages containing msgs
   geometry_msgs
   sensor_msgs
+  gazebo_msgs
 )
 
 ################################################
@@ -125,11 +127,10 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
 )
+include_directories(./include)
 
-## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/gym_style_gazebo.cpp
-# )
+# Declare a C++ library
+add_library(task_env_io src/task_env_io.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

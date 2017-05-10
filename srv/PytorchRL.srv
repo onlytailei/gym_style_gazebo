@@ -2,6 +2,7 @@ geometry_msgs/Twist action
 bool reset
 
 -----
-sensor_msgs/Image state
+sensor_msgs/Image state_1
+gazebo_msgs/ModelStates state_2
 bool terminal
 float32 reward
