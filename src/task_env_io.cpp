@@ -9,17 +9,17 @@
 #include <algorithm>
 #include "task_env_io.h"
 
-template<class topicType>
+template<typename topicType>
 void RL::GetNewTopic<topicType>::StateCallback(const topicType& msg_){
   StateVector.push_back(msg_);
   if (StateVector.size() > 2) 
     StateVector.erase(StateVector.begin());
 }
 
-template<class topicType>
+template<typename topicType>
 RL::GetNewTopic<topicType>::GetNewTopic(ros::NodeHandlePtr rosNode_,
    const std::string topic_name){
- StateSub = rosNode_->subscribe<topicType>(topic_name, 1, &GetNewTopic::StateCallback);   
+ StateSub = rosNode_->subscribe(topic_name, 1, &GetNewTopic::StateCallback, this);   
 }
 
 RL::TaskEnvIO::TaskEnvIO(

@@ -18,7 +18,7 @@
 
 namespace RL {
 
-  template<class topicType>
+  template<typename topicType>
   class GetNewTopic{
 
       public: std::vector<topicType> StateVector;
