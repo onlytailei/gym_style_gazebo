@@ -16,7 +16,7 @@
 template<typename topicType>
 void RL::GetNewTopic<topicType>::StateCallback(const topicType& msg_){
   StateVector.push_back(msg_);
-  if (StateVector.size() > 2) 
+  if (StateVector.size() > 5) 
     StateVector.erase(StateVector.begin());
 }
 
@@ -50,8 +50,8 @@ bool RL::TaskEnvIO::ServiceCallback(
   res.terminal = terminalCheck();
   res.reward = rewardCalculate();
   //ros::Duration(sleeping_time_).sleep();
-  res.state_1 = *((state_1->StateVector).back());
-  res.state_2 = (state_2->StateVector.back());
+  //res.state_1 = *((state_1->StateVector).back());
+  //res.state_2 = (state_2->StateVector.back());
   return true;
 }
 
