@@ -40,6 +40,18 @@ namespace RL {
   using STATE_2_TYPE = gazebo_msgs::ModelStates;
   using ACTION_TYPE = geometry_msgs::Twist;
 
+  struct RobotState {
+    float distance;
+    float angle;
+    float lin_vel;
+    float ang_vel;
+  };
+
+  struct TargetPose {
+    float x;
+    float y;
+  };
+
   // Main class inherit from gazeboenvio
   class TaskEnvIO : public RL::GazeboEnvIO{
     private:
@@ -50,11 +62,23 @@ namespace RL {
       
       bool collision_check();
       bool target_check();
-      float  getRobotState();
-      float  getRobotState2();
+      void getRobotState();
       
+      float getRobotStateTF(); //Deprecated
+      tf::TransformListener tf_listener; //Deprecated
+      
+      TargetPose target_pose_;
+      RobotState robot_state_;
+
       float collision_th;
-      tf::TransformListener tf_listener;
+      float target_th;
+      float previous_distance;
+      float terminalReward;
+      float failReward;
+      float distance_coef;
+      float time_discount;
+      bool terminal_flag;      
+      
       const float sleeping_time_;
 
       virtual bool ServiceCallback(
