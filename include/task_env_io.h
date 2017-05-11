@@ -14,13 +14,16 @@
 #include <sensor_msgs/LaserScan.h>
 #include <std_msgs/Float32MultiArray.h>
 #include <gazebo_msgs/ModelStates.h>
+#include <gazebo_msgs/ModelState.h>
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/Twist.h>
 #include <thread>
+#include <tf/tf.h>
+#include <tf/transform_listener.h>
 #include "gazebo_env_io.h"
 
 namespace RL {
-
+  // Template class for subscriber 
   template<typename topicType>
     class GetNewTopic{
 
@@ -32,10 +35,12 @@ namespace RL {
                GetNewTopic(ros::NodeHandlePtr, const std::string);
     };
 
+  // typedef
   using STATE_1_TYPE = sensor_msgs::ImageConstPtr;
   using STATE_2_TYPE = gazebo_msgs::ModelStates;
   using ACTION_TYPE = geometry_msgs::Twist;
 
+  // Main class inherit from gazeboenvio
   class TaskEnvIO : public RL::GazeboEnvIO{
     private:
       ros::Publisher ActionPub;
@@ -55,7 +60,11 @@ namespace RL {
       
       bool collision_check();
       bool target_check();
-      float real_time_position_speed();
+      float  getRobotState();
+      
+      float collision_th;
+      tf::TransformListener tf_listener;
+
     public: 
       TaskEnvIO(
           const std::string service_name="pytorch_io_service",

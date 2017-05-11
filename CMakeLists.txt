@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
     geometry_msgs
     gazebo_msgs
     cv_bridge
+    tf
     message_generation
 )
 
@@ -141,7 +142,7 @@ include_directories(./include)
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(task_env_service src/start_service.cpp src/task_env_io.cpp)
+add_executable(task_env_service src/main.cpp src/task_env_io.cpp)
 target_link_libraries(task_env_service ${catkin_LIBRARIES})
 
 ## Rename C++ executable without prefix
