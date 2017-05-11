@@ -9,6 +9,8 @@
 #include <assert.h>
 #include <algorithm>
 #include <math.h>
+#include <time.h>
+#include <ctime>
 #include "gazebo_env_io.h"
 #include "task_env_io.h"
 
@@ -52,8 +54,6 @@ bool RL::TaskEnvIO::ServiceCallback(
   //ros::Duration(sleeping_time_).sleep();
   res.state_1 = *((state_1->StateVector).back());
   res.state_2 = (state_2->StateVector.back());
-  //std::cout<<"state 1 size: "<<state_1->StateVector.size()<<std::endl;
-  //std::cout<<"state 2 size: "<<state_2->StateVector.size()<<std::endl;
   
   
   return true;
@@ -63,6 +63,7 @@ float RL::TaskEnvIO::rewardCalculate(){
   collision_check();
   target_check();
   getRobotState();
+  getRobotState2();
   return 0;
 }
 
@@ -83,7 +84,8 @@ bool RL::TaskEnvIO::collision_check(){
 bool RL::TaskEnvIO::target_check(){
   // Check the distance and angle to target
   // Check if we arrive at the target
-
+  
+  std::clock_t c_start = std::clock(); 
   tf::StampedTransform transform_;
   try{
     tf_listener.lookupTransform("base_link",
@@ -93,9 +95,11 @@ bool RL::TaskEnvIO::target_check(){
   }
   catch (tf::TransformException ex){
     ROS_ERROR("%s",ex.what());
-    //ros::Duration(1.0).sleep(); 
   }
   
+  std::clock_t c_end = std::clock();
+  std::cout<< "call target tf time: "<<c_end-c_start<<std::endl;
+
   float angle_ = atan2(transform_.getOrigin().y(),
       transform_.getOrigin().x());
   
@@ -124,8 +128,9 @@ float RL::TaskEnvIO::getRobotState(){
   //std::vector<std::string> names = newStates.name; 
   //auto idx_ = std::find(names.begin(), names.end(),"mobile_base")-names.begin(); 
   //assert(idx_ < names.size());
-  //geometry_msgs::Twist robot_twisit = newStates.twist.at(idx_);
+  //geometry_msgs::Twist twisit_ = newStates.twist.at(idx_);
 
+  std::clock_t c_start = std::clock(); 
   geometry_msgs::Twist twsit_;
   try{
     tf_listener.lookupTwist("default_world",
@@ -139,6 +144,9 @@ float RL::TaskEnvIO::getRobotState(){
     //ros::Duration(1.0).sleep(); 
   }
   
+  std::clock_t c_end = std::clock();
+  std::cout<< "call twist tf time: "<<c_end-c_start<<std::endl;
+  
   float angle_vel_ = twsit_.angular.z;
   
   float lin_vel_ = sqrt(pow(twsit_.linear.x, 2) + 
@@ -147,15 +155,26 @@ float RL::TaskEnvIO::getRobotState(){
   std::cout<<"angular vel:  "<<angle_vel_<<std::endl;
   std::cout<<"linear vel: "<<lin_vel_<<std::endl;
 
-  return true;
-  
-
-  //float x_ = robot_pose.position.x;
-  //float y_ = robot_pose.position.y;
-
-  //tf::Quaternion quat;
-  //tf::quaternionMsgToTF(robot_pose.orientation, quat);
-
-  //float rotation_angle = atan2(start_y-y, start_x-x) - yaw;
-  //float norm_rotation_angle = (int(rotation_angle * 10000) % 31416 )*1.0/31416;
+  return 0;
 }
+
+
+float RL::TaskEnvIO::getRobotState2(){
+  // get robot pose
+  std::clock_t c_start = std::clock(); 
+  
+  gazebo_msgs::ModelStates newStates = state_2->StateVector.back();
+  std::vector<std::string> names = newStates.name; 
+  auto idx_ = std::find(names.begin(), names.end(),"mobile_base")-names.begin(); 
+  assert(idx_ < names.size());
+  geometry_msgs::Twist twisit_ = newStates.twist.at(idx_);
+  geometry_msgs::Pose pose_ = newStates.pose.at(idx_);
+  
+  std::clock_t c_end = std::clock();
+  std::cout<< "call topic time: "<<c_end-c_start<<std::endl;
+  
+  
+  return 0;
+}
+
+

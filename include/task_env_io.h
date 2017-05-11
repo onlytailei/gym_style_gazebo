@@ -51,6 +51,7 @@ namespace RL {
       bool collision_check();
       bool target_check();
       float  getRobotState();
+      float  getRobotState2();
       
       float collision_th;
       tf::TransformListener tf_listener;
