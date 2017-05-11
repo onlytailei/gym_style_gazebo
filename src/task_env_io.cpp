@@ -50,8 +50,8 @@ bool RL::TaskEnvIO::ServiceCallback(
   res.terminal = terminalCheck();
   res.reward = rewardCalculate();
   //ros::Duration(sleeping_time_).sleep();
-  //res.state_1 = *((state_1->StateVector).back());
-  //res.state_2 = (state_2->StateVector.back());
+  res.state_1 = *((state_1->StateVector).back());
+  res.state_2 = (state_2->StateVector.back());
   return true;
 }
 
