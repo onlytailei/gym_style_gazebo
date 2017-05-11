@@ -39,7 +39,7 @@ RL::TaskEnvIO::TaskEnvIO(
   state_2(new RL::GetNewTopic<RL::STATE_2_TYPE>(this->rosNode, "/gazebo/model_states")),
   laser_scan(new RL::GetNewTopic<sensor_msgs::LaserScanConstPtr>(this->rosNode, "/scan")),
   target_pose_{0,0},
-  robot_state_{0,0,0,0},
+  robot_state_{{0,0,0,0}}, //double brace for std::array
   sleeping_time_(sleeping_time){
 
     rosNode->getParam("COLLISION_TH",collision_th);
@@ -73,7 +73,8 @@ bool RL::TaskEnvIO::ServiceCallback(
   res.reward = rewardCalculate();
   res.terminal = terminal_flag;
   res.state_1 = *((state_1->StateVector).back());
-  res.state_2 = (state_2->StateVector.back());
+  //res.state_2 = (state_2->StateVector.back());
+  std::copy(robot_state_.begin(),robot_state_.end(), res.state_2.data.begin());
   return true;
 }
 
@@ -87,8 +88,8 @@ float RL::TaskEnvIO::rewardCalculate(){
     return terminalReward;}
   else {
     terminal_flag = false;
-    return distance_coef * (previous_distance - robot_state_.distance)-time_discount;}
-  previous_distance = robot_state_.distance;
+    return distance_coef * (previous_distance - robot_state_.at(1))-time_discount;}
+  previous_distance = robot_state_.at(1);
   return 0;
 }
 
@@ -106,7 +107,7 @@ bool RL::TaskEnvIO::collision_check(){
 
 /// use tf to call the robot position DEPRECATED too slow
 bool RL::TaskEnvIO::target_check(){
-  return (robot_state_.distance <target_th)? true : false;
+  return (robot_state_.at(1) <target_th)? true : false;
 }
 
 ///////////////////////
@@ -129,15 +130,15 @@ void RL::TaskEnvIO::getRobotState(){
   geometry_msgs::Pose pose_ = newStates.pose.at(idx_);
 
   //Robot State Update
-  robot_state_.angle = atan2(target_pose_.x-pose_.position.x, 
+  robot_state_.at(0) = atan2(target_pose_.x-pose_.position.x, 
       target_pose_.y-pose_.position.y);
 
-  robot_state_.distance = sqrt(pow((target_pose_.x-pose_.position.x), 2) + 
+  robot_state_.at(1) = sqrt(pow((target_pose_.x-pose_.position.x), 2) + 
       pow((target_pose_.y-pose_.position.y), 2));
 
-  robot_state_.ang_vel = twist_.angular.z;
+  robot_state_.at(2) = twist_.angular.z;
 
-  robot_state_.lin_vel = sqrt(pow(twist_.linear.x, 2) + 
+  robot_state_.at(3) = sqrt(pow(twist_.linear.x, 2) + 
       pow(twist_.linear.y, 2));
 }
 
@@ -168,7 +169,6 @@ float RL::TaskEnvIO::getRobotStateTF(){
   std::cout<<"angle: "<<angle_<<std::endl;
   std::cout<<"distance: "<<distance_<<std::endl;
 
-
   std::clock_t c_start_2 = std::clock(); 
   geometry_msgs::Twist twsit_;
   try{
@@ -180,7 +180,6 @@ float RL::TaskEnvIO::getRobotStateTF(){
   }
   catch (tf::TransformException ex){
     ROS_ERROR("%s",ex.what());
-    //ros::Duration(1.0).sleep(); 
   }
 
   std::clock_t c_end_2 = std::clock();

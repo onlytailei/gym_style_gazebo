@@ -39,13 +39,15 @@ namespace RL {
   using STATE_1_TYPE = sensor_msgs::ImageConstPtr;
   using STATE_2_TYPE = gazebo_msgs::ModelStates;
   using ACTION_TYPE = geometry_msgs::Twist;
+  // angle, distance, ang_vel, lin_vel
+  using ROBOT_STATE = std::array<float, 4>; 
 
-  struct RobotState {
-    float distance;
-    float angle;
-    float lin_vel;
-    float ang_vel;
-  };
+  //struct RobotState {
+    //float angle;
+    //float distance;
+    //float ang_vel;
+    //float lin_vel;
+  //};
 
   struct TargetPose {
     float x;
@@ -67,8 +69,8 @@ namespace RL {
       float getRobotStateTF(); //Deprecated
       tf::TransformListener tf_listener; //Deprecated
       
-      TargetPose target_pose_;
-      RobotState robot_state_;
+      RL::TargetPose target_pose_;
+      RL::ROBOT_STATE robot_state_;
 
       float collision_th;
       float target_th;
