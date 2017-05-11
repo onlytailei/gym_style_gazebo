@@ -74,6 +74,7 @@ bool RL::TaskEnvIO::ServiceCallback(
   res.terminal = terminal_flag;
   res.state_1 = *((state_1->StateVector).back());
   //res.state_2 = (state_2->StateVector.back());
+  res.state_2.data.reserve(4);
   std::copy(robot_state_.begin(),robot_state_.end(), res.state_2.data.begin());
   return true;
 }
