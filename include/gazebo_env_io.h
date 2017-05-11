@@ -27,11 +27,11 @@ namespace RL{
       virtual bool ServiceCallback(gym_style_gazebo::PytorchRL::Request&,
             gym_style_gazebo::PytorchRL::Response&) =0;
 
-      virtual float rewardCalculate() const =0; 
+      virtual float rewardCalculate() =0; 
       
-      virtual bool terminalCheck() const =0;
+      virtual bool terminalCheck()  =0;
       
-      virtual bool reset() const =0;
+      virtual bool reset()  =0;
   };
 }
 

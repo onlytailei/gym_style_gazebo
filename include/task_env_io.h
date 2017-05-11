@@ -48,22 +48,21 @@ namespace RL {
       std::shared_ptr<RL::GetNewTopic<RL::STATE_2_TYPE>> state_2;
       std::shared_ptr<RL::GetNewTopic<sensor_msgs::LaserScanConstPtr>> laser_scan;
       
-      const float sleeping_time_;
-
-      virtual bool ServiceCallback(
-          gym_style_gazebo::PytorchRL::Request&,
-          gym_style_gazebo::PytorchRL::Response&);
-
-      virtual float rewardCalculate() const;
-      virtual bool terminalCheck() const;
-      virtual bool reset() const;
-      
       bool collision_check();
       bool target_check();
       float  getRobotState();
       
       float collision_th;
       tf::TransformListener tf_listener;
+      const float sleeping_time_;
+
+      virtual bool ServiceCallback(
+          gym_style_gazebo::PytorchRL::Request&,
+          gym_style_gazebo::PytorchRL::Response&);
+
+      virtual float rewardCalculate();
+      virtual bool terminalCheck();
+      virtual bool reset();
 
     public: 
       TaskEnvIO(

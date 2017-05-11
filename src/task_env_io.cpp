@@ -54,12 +54,14 @@ bool RL::TaskEnvIO::ServiceCallback(
   return true;
 }
 
-float RL::TaskEnvIO::rewardCalculate() const{
-
+float RL::TaskEnvIO::rewardCalculate(){
+  collision_check();
+  target_check();
+  getRobotState();
   return 0;
 }
 
-bool RL::TaskEnvIO::terminalCheck() const{
+bool RL::TaskEnvIO::terminalCheck(){
 
   return true;
 }
@@ -77,23 +79,23 @@ bool RL::TaskEnvIO::target_check(){
   // Check the distance and angle to target
   // Check if we arrive at the target
 
-  tf::StampedTransform transform;
+  tf::StampedTransform transform_;
   try{
     tf_listener.lookupTransform("base_link",
         "target_pose",
         ros::Time(0),
-        transform); 
+        transform_); 
   }
   catch (tf::TransformException ex){
     ROS_ERROR("%s",ex.what());
     //ros::Duration(1.0).sleep(); 
   }
   
-  float angle_ = atan2(transform.getOrigin().y(),
-      transform.getOrigin().x());
+  float angle_ = atan2(transform_.getOrigin().y(),
+      transform_.getOrigin().x());
   
-  float distance_ = sqrt(pow(transform.getOrigin().x(), 2) + 
-      pow(transform.getOrigin().y(), 2));
+  float distance_ = sqrt(pow(transform_.getOrigin().x(), 2) + 
+      pow(transform_.getOrigin().y(), 2));
   
   std::cout<<"angle: "<<angle_<<std::endl;
   std::cout<<"distance: "<<distance_<<std::endl;
@@ -101,7 +103,7 @@ bool RL::TaskEnvIO::target_check(){
   return true;
 }
 
-bool RL::TaskEnvIO::reset() const{
+bool RL::TaskEnvIO::reset() {
   // Set a new target for the robot 
   // Set a new position for the robot
   // Set random position for pedes
@@ -113,14 +115,35 @@ bool RL::TaskEnvIO::reset() const{
 
 float RL::TaskEnvIO::getRobotState(){
   // get robot pose
-  gazebo_msgs::ModelStates newStates = state_2->StateVector.back();
-  std::vector<std::string> names = newStates.name; 
-  auto idx_ = std::find(names.begin(), names.end(),"mobile_base")-names.begin(); 
-  assert(idx_ < names.size());
-  //ge\ometry_msgs::Pose robot_pose = newStates.pose.at(idx_);
-  geometry_msgs::Twist robot_twisit = newStates.twist.at(idx_);
+  //gazebo_msgs::ModelStates newStates = state_2->StateVector.back();
+  //std::vector<std::string> names = newStates.name; 
+  //auto idx_ = std::find(names.begin(), names.end(),"mobile_base")-names.begin(); 
+  //assert(idx_ < names.size());
+  //geometry_msgs::Twist robot_twisit = newStates.twist.at(idx_);
 
+  geometry_msgs::Twist twsit_;
+  try{
+    tf_listener.lookupTwist("default_world",
+        "base_link",
+        ros::Time(0),
+        ros::Duration(0.01),
+        twsit_ ); 
+  }
+  catch (tf::TransformException ex){
+    ROS_ERROR("%s",ex.what());
+    //ros::Duration(1.0).sleep(); 
+  }
+  
+  float angle_vel_ = twsit_.angular.z;
+  
+  float lin_vel_ = sqrt(pow(twsit_.linear.x, 2) + 
+      pow(twsit_.linear.y, 2));
+  
+  std::cout<<"angular vel:  "<<angle_vel_<<std::endl;
+  std::cout<<"linear vel: "<<lin_vel_<<std::endl;
 
+  return true;
+  
 
   //float x_ = robot_pose.position.x;
   //float y_ = robot_pose.position.y;
@@ -130,9 +153,4 @@ float RL::TaskEnvIO::getRobotState(){
 
   //float rotation_angle = atan2(start_y-y, start_x-x) - yaw;
   //float norm_rotation_angle = (int(rotation_angle * 10000) % 31416 )*1.0/31416;
-
-
-
-
-  return true;
 }
