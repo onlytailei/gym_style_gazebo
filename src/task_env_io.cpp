@@ -32,7 +32,7 @@ RL::TaskEnvIO::TaskEnvIO(
     const float sleeping_time):
   GazeboEnvIO(node_name), 
   state_1(new RL::GetNewTopic<RL::STATE_1_TYPE>(this->rosNode, "/camera/depth/image_raw")),
-  state_2(new RL::GetNewTopic<RL::STATE_2_TYPE>(this->rosNode, "/gazebo/ModelStates")),
+  state_2(new RL::GetNewTopic<RL::STATE_2_TYPE>(this->rosNode, "/gazebo/model_states")),
   laser_scan(new RL::GetNewTopic<sensor_msgs::LaserScanConstPtr>(this->rosNode, "/scan")),
   sleeping_time_(sleeping_time){ 
     
@@ -50,10 +50,10 @@ bool RL::TaskEnvIO::ServiceCallback(
   res.terminal = terminalCheck();
   res.reward = rewardCalculate();
   //ros::Duration(sleeping_time_).sleep();
-  //res.state_1 = *((state_1->StateVector).back());
-  //res.state_2 = (state_2->StateVector.back());
-  std::cout<<"state 1 size: "<<state_1->StateVector.size()<<std::endl;
-  std::cout<<"state 2 size: "<<state_2->StateVector.size()<<std::endl;
+  res.state_1 = *((state_1->StateVector).back());
+  res.state_2 = (state_2->StateVector.back());
+  //std::cout<<"state 1 size: "<<state_1->StateVector.size()<<std::endl;
+  //std::cout<<"state 2 size: "<<state_2->StateVector.size()<<std::endl;
   
   
   return true;
