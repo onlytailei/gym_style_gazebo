@@ -42,20 +42,23 @@ RL::TaskEnvIO::TaskEnvIO(
   robot_state_{{0,0,0,0}}, //double brace for std::array
   sleeping_time_(sleeping_time){
 
-    rosNode->getParam("COLLISION_TH",collision_th);
-    rosNode->getParam("DISTANCE_COEF",distance_coef);
-    rosNode->getParam("FAIL_REWARD",failReward);
-    rosNode->getParam("TERMINAL_REWARD",terminalReward);
-    rosNode->getParam("TARGET_TH",target_th);
-    rosNode->getParam("TARGET_X",target_pose_.x);
-    rosNode->getParam("TARGET_Y",target_pose_.y);
-    rosNode->getParam("TIME_DISCOUNT",time_discount);
+    assert(rosNode->getParam("/COLLISION_TH",collision_th));
+    assert(rosNode->getParam("/DISTANCE_COEF",distance_coef));
+    assert(rosNode->getParam("/FAIL_REWARD",failReward));
+    assert(rosNode->getParam("/TERMINAL_REWARD",terminalReward));
+    assert(rosNode->getParam("/TARGET_TH",target_th));
+    assert(rosNode->getParam("/TARGET_X",target_pose_.x));
+    assert(rosNode->getParam("/TARGET_Y",target_pose_.y));
+    assert(rosNode->getParam("/TIME_DISCOUNT",time_discount));
 
-    assert(collision_th!=0.0);
-
-    ActionPub = this->rosNode->advertise<RL::ACTION_TYPE>("/mobile_base/command/velolcity", 1);
+    ActionPub = this->rosNode->advertise<RL::ACTION_TYPE>("/mobile_base/commands/velocity", 1);
     PytorchService = this->rosNode->advertiseService(service_name, &TaskEnvIO::ServiceCallback, this);
   }
+
+/////////////////////
+bool RL::TaskEnvIO::rosparam_set(){
+  return true;
+}
 
 ///////////////////////
 bool RL::TaskEnvIO::ServiceCallback(
@@ -72,10 +75,15 @@ bool RL::TaskEnvIO::ServiceCallback(
   getRobotState(); //update robot state
   res.reward = rewardCalculate();
   res.terminal = terminal_flag;
-  res.state_1 = *((state_1->StateVector).back());
-  //res.state_2 = (state_2->StateVector.back());
+  {
+  res.state_2.layout.dim.push_back(std_msgs::MultiArrayDimension());
+  res.state_2.layout.dim[0].size = robot_state_.size();
+  res.state_2.layout.dim[0].stride = 1;
+  res.state_2.layout.dim[0].label = "roobot state";
+  res.state_2.data.clear();
   res.state_2.data.reserve(4);
-  std::copy(robot_state_.begin(),robot_state_.end(), res.state_2.data.begin());
+  res.state_2.data.insert(res.state_2.data.end(), robot_state_.begin(),robot_state_.end());
+  }
   return true;
 }
 
@@ -123,6 +131,7 @@ bool RL::TaskEnvIO::reset() {
 
 ///////////////////////
 void RL::TaskEnvIO::getRobotState(){
+  
   gazebo_msgs::ModelStates newStates = state_2->StateVector.back();
   std::vector<std::string> names = newStates.name; 
   auto idx_ = std::find(names.begin(), names.end(),"mobile_base")-names.begin(); 
@@ -141,6 +150,17 @@ void RL::TaskEnvIO::getRobotState(){
 
   robot_state_.at(3) = sqrt(pow(twist_.linear.x, 2) + 
       pow(twist_.linear.y, 2));
+
+  //std::cout<<"==================="<<std::endl;
+  //std::cout<<"target_pose x: "<<target_pose_.x<<std::endl;
+  //std::cout<<"target_pose y: "<<target_pose_.y<<std::endl;
+  //std::cout<<"robot_pose x: "<<pose_.position.x<<std::endl;
+  //std::cout<<"robot_pose y: "<<pose_.position.y<<std::endl;
+  //std::cout<< "angle: "<<robot_state_.at(0) <<std::endl;
+  //std::cout<< "distance: "<<robot_state_.at(1) <<std::endl;
+  //std::cout<< "ang_vel: "<<robot_state_.at(2) <<std::endl;
+  //std::cout<< "lin_vel: "<<robot_state_.at(3) <<std::endl;
+  //std::cout<< "collision_th: "<<collision_th <<std::endl;
 }
 
 
