@@ -72,8 +72,6 @@ namespace RL {
       RL::TargetPose target_pose_;
       RL::ROBOT_STATE robot_state_;
       
-      bool rosparam_set();
-
       float collision_th;
       float target_th;
       float previous_distance;

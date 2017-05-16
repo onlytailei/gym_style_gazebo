@@ -55,11 +55,6 @@ RL::TaskEnvIO::TaskEnvIO(
     PytorchService = this->rosNode->advertiseService(service_name, &TaskEnvIO::ServiceCallback, this);
   }
 
-/////////////////////
-bool RL::TaskEnvIO::rosparam_set(){
-  return true;
-}
-
 ///////////////////////
 bool RL::TaskEnvIO::ServiceCallback(
     gym_style_gazebo::PytorchRL::Request &req,
@@ -124,7 +119,9 @@ bool RL::TaskEnvIO::reset() {
   // Set a new target for the robot 
   // Set a new position for the robot
   // Set random position for pedes
-
+  
+  getRobotState(); //update robot state
+  rewardCalculate(); //check if it is terminal
   return true;
 }
 
