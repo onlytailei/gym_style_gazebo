@@ -9,10 +9,13 @@
 #include <assert.h>
 #include <algorithm>
 #include <math.h>
+#include <cmath>
 #include <time.h>
 #include <ctime>
+#include <ros/console.h> //roslogging
 #include "gazebo_env_io.h"
 #include "task_env_io.h"
+#include <typeinfo>
 
 /// statecallback function
 template<typename topicType>
@@ -89,11 +92,10 @@ bool RL::TaskEnvIO::ServiceCallback(
 ///////////////////////
 float RL::TaskEnvIO::rewardCalculate(){
   // TODO check the collision check alwasy return true
-  /*
+  
   if (collision_check()){
     terminal_flag = true;
     return failReward;}
-  */
   if (terminalCheck()){
     terminal_flag = true;
     return terminalReward;}
@@ -112,7 +114,14 @@ bool RL::TaskEnvIO::terminalCheck(){
 ///////////////////////
 bool RL::TaskEnvIO::collision_check(){
   std::vector<float> range_array = laser_scan->StateVector.back()->ranges;
+  range_array.erase(std::remove_if(range_array.begin(), 
+        range_array.end(), 
+        [](float x){return !std::isfinite(x);}), 
+      range_array.end());
   float min_scan = *std::min_element(std::begin(range_array), std::end(range_array));
+  //std::cout<< "min_scan: "<< min_scan  <<std::endl;
+  
+  ROS_ERROR("min_scan: %f, typeinfo: %s", min_scan, typeid(min_scan).name());
   return  (min_scan < collision_th)? true : false;
 }
 
