@@ -12,7 +12,9 @@
 #include <cmath>
 #include <time.h>
 #include <ctime>
-#include <cv_bridge/cv_bridge.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include <sensor_msgs/image_encodings.h>
 #include <ros/console.h> //roslogging
 #include "gazebo_env_io.h"
@@ -78,15 +80,27 @@ bool RL::TaskEnvIO::ServiceCallback(
   getRobotState(); //update robot state
   res.reward = rewardCalculate();
   res.terminal = terminal_flag;
-  res.state_1 = *state_1->StateVector.back();
-//==================
-  cv_bridge::CvImagePtr cv_ptr;
   cv_ptr = cv_bridge::toCvCopy(state_1->StateVector.back(), state_1->StateVector.back()->encoding);
-//=================
+  //Build first state
+  {
+  res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
+  res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
+  res.state_1.layout.dim[0].size = cv_ptr->image.rows;
+  res.state_1.layout.dim[0].stride = cv_ptr->image.cols*cv_ptr->image.rows;
+  res.state_1.layout.dim[0].label = "height";
+  res.state_1.layout.dim[1].size = cv_ptr->image.cols;
+  res.state_1.layout.dim[1].stride = cv_ptr->image.cols;
+  res.state_1.layout.dim[1].label = "width";
+  res.state_1.data.clear();
+  std::vector<float> output_img((float*)cv_ptr->image.data, (float*)cv_ptr->image.data + cv_ptr->image.cols * cv_ptr->image.rows);
+  res.state_1.data.reserve(cv_ptr->image.cols*cv_ptr->image.rows);
+  res.state_1.data.insert(res.state_1.data.end(), output_img.begin(), output_img.end());
+  }
+  //Build second state
   {
   res.state_2.layout.dim.push_back(std_msgs::MultiArrayDimension());
   res.state_2.layout.dim[0].size = robot_state_.size();
-  res.state_2.layout.dim[0].stride = 1;
+  res.state_2.layout.dim[0].stride = robot_state_.size();
   res.state_2.layout.dim[0].label = "roobot state";
   res.state_2.data.clear();
   res.state_2.data.reserve(4);

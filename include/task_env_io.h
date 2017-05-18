@@ -17,6 +17,7 @@
 #include <gazebo_msgs/ModelState.h>
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/Twist.h>
+#include <cv_bridge/cv_bridge.h>
 #include <thread>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
@@ -71,6 +72,7 @@ namespace RL {
       
       RL::TargetPose target_pose_;
       RL::ROBOT_STATE robot_state_;
+      cv_bridge::CvImagePtr cv_ptr;
       
       float collision_th;
       float target_th;

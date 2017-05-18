@@ -2,7 +2,8 @@ geometry_msgs/Twist action
 bool reset
 
 -----
-sensor_msgs/Image state_1
+#sensor_msgs/Image state_1
+std_msgs/Float32MultiArray state_1
 std_msgs/Float32MultiArray state_2
 bool terminal
 float32 reward
