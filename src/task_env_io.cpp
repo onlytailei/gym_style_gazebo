@@ -12,6 +12,8 @@
 #include <cmath>
 #include <time.h>
 #include <ctime>
+#include <cv_bridge/cv_bridge.h>
+#include <sensor_msgs/image_encodings.h>
 #include <ros/console.h> //roslogging
 #include "gazebo_env_io.h"
 #include "task_env_io.h"
@@ -77,6 +79,10 @@ bool RL::TaskEnvIO::ServiceCallback(
   res.reward = rewardCalculate();
   res.terminal = terminal_flag;
   res.state_1 = *state_1->StateVector.back();
+//==================
+  cv_bridge::CvImagePtr cv_ptr;
+  cv_ptr = cv_bridge::toCvCopy(state_1->StateVector.back(), state_1->StateVector.back()->encoding);
+//=================
   {
   res.state_2.layout.dim.push_back(std_msgs::MultiArrayDimension());
   res.state_2.layout.dim[0].size = robot_state_.size();
@@ -105,6 +111,8 @@ float RL::TaskEnvIO::rewardCalculate(){
   previous_distance = robot_state_.at(1);
   return 0;
 }
+
+
 
 ///////////////////////
 bool RL::TaskEnvIO::terminalCheck(){

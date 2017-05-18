@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
     geometry_msgs
     gazebo_msgs
     cv_bridge
+    image_transport
     tf
     message_generation
 )
