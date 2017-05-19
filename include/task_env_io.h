@@ -66,7 +66,8 @@ namespace RL {
       bool collision_check();
       bool target_check();
       void getRobotState();
-      
+      double getRobotYaw(geometry_msgs::Quaternion &) const;
+
       float getRobotStateTF(); //Deprecated
       tf::TransformListener tf_listener; //Deprecated
       

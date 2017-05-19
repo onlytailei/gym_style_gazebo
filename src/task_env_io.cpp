@@ -20,6 +20,9 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <sensor_msgs/image_encodings.h>
 #include <ros/console.h> //roslogging
+#include <tf/transform_datatypes.h>
+#include <geometry_msgs/Vector3.h>
+#include <tf/LinearMath/Matrix3x3.h>
 #include "gazebo_env_io.h"
 #include "task_env_io.h"
 #include <typeinfo>
@@ -32,7 +35,6 @@ template<typename topicType>
 void RL::GetNewTopic<topicType>::StateCallback(const topicType& msg_){
   std::lock_guard<std::mutex> lock(topic_mutex);
   StateVector.push_back(msg_);
-  ROS_ERROR("New State vector size %d", StateVector.size());
   if (StateVector.size() > 5)
     StateVector.erase(StateVector.begin());
 }
@@ -84,15 +86,23 @@ bool RL::TaskEnvIO::ServiceCallback(
       //std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
   }
-
-  ActionPub.publish(req.action);
+  
+  geometry_msgs::Twist action_out = req.action;
+  //velocity angular
+  action_out.angular.z = std::copysign(1, action_out.angular.z) > 1 ? std::copysign(1, action_out.angular.z): action_out.angular.z;  
+  robot_state_.at(2) = action_out.angular.z;
+  //velocity linear
+  action_out.linear.x = std::abs(action_out.linear.x-0.5) > 0.5 ? (std::copysign(1, action_out.linear.x)+1)/2 : action_out.linear.x;
+  robot_state_.at(3) = action_out.linear.x;
+  
+  ActionPub.publish(action_out);
   getRobotState(); //update robot state
   res.reward = rewardCalculate();
   res.terminal = terminal_flag;
   std::unique_lock<std::mutex> state_1_lock(topic_mutex);
   cv_ptr = cv_bridge::toCvCopy(state_1->StateVector.back(), state_1->StateVector.back()->encoding);
   state_1_lock.unlock();
-  //Build first state
+  
   {
   res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
   res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
@@ -122,7 +132,6 @@ bool RL::TaskEnvIO::ServiceCallback(
 
 ///////////////////////
 float RL::TaskEnvIO::rewardCalculate(){
-  // TODO check the collision check alwasy return true
   
   if (collision_check()){
     terminal_flag = true;
@@ -149,7 +158,6 @@ bool RL::TaskEnvIO::collision_check(){
   std::unique_lock<std::mutex> laser_scan_lock(topic_mutex);
   std::vector<float> range_array = laser_scan->StateVector.back()->ranges;
   laser_scan_lock.unlock();
-  ROS_ERROR("Range array path %p", &range_array);
   range_array.erase(std::remove_if(range_array.begin(), 
         range_array.end(), 
         [](float x){return !std::isfinite(x);}), 
@@ -177,6 +185,14 @@ bool RL::TaskEnvIO::reset() {
   return true;
 }
 
+///////////////////////
+double RL::TaskEnvIO::getRobotYaw(geometry_msgs::Quaternion &state_quat_) const {
+    tf::Quaternion quat;
+    tf::quaternionMsgToTF(state_quat_, quat);
+    double roll, pitch, yaw;
+    tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+    return yaw;
+}
 
 ///////////////////////
 void RL::TaskEnvIO::getRobotState(){
@@ -187,31 +203,29 @@ void RL::TaskEnvIO::getRobotState(){
   std::vector<std::string> names = newStates.name;
   auto idx_ = std::find(names.begin(), names.end(),"mobile_base")-names.begin();
   assert(idx_ < names.size());
-  geometry_msgs::Twist twist_ = newStates.twist.at(idx_);
+  //geometry_msgs::Twist twist_ = newStates.twist.at(idx_);
   geometry_msgs::Pose pose_ = newStates.pose.at(idx_);
+  
+  double yaw_= getRobotYaw(pose_.orientation);
 
-  //Robot State Update
-  robot_state_.at(0) = atan2(target_pose_.x-pose_.position.x,
-      target_pose_.y-pose_.position.y);
-
+  //relative angle
+  robot_state_.at(0) = atan2(target_pose_.y-pose_.position.y,
+      target_pose_.x-pose_.position.x) - yaw_;
+  
+  //relative distance
   robot_state_.at(1) = sqrt(pow((target_pose_.x-pose_.position.x), 2) +
       pow((target_pose_.y-pose_.position.y), 2));
 
-  robot_state_.at(2) = twist_.angular.z;
 
-  robot_state_.at(3) = sqrt(pow(twist_.linear.x, 2) +
-      pow(twist_.linear.y, 2));
-
-  //std::cout<<"==================="<<std::endl;
-  //std::cout<<"target_pose x: "<<target_pose_.x<<std::endl;
-  //std::cout<<"target_pose y: "<<target_pose_.y<<std::endl;
-  //std::cout<<"robot_pose x: "<<pose_.position.x<<std::endl;
-  //std::cout<<"robot_pose y: "<<pose_.position.y<<std::endl;
-  //std::cout<< "angle: "<<robot_state_.at(0) <<std::endl;
-  //std::cout<< "distance: "<<robot_state_.at(1) <<std::endl;
-  //std::cout<< "ang_vel: "<<robot_state_.at(2) <<std::endl;
-  //std::cout<< "lin_vel: "<<robot_state_.at(3) <<std::endl;
-  //std::cout<< "collision_th: "<<collision_th <<std::endl;
+  ROS_ERROR("=================================");
+  ROS_ERROR("target_pose x: %f", target_pose_.x);
+  ROS_ERROR("target_pose y: %f", target_pose_.y);
+  ROS_ERROR("robot_pose x: %f", pose_.position.x);
+  ROS_ERROR("robot_pose y: %f", pose_.position.y);
+  ROS_ERROR("angle: %f",robot_state_.at(0));
+  ROS_ERROR("distance: %f",robot_state_.at(1));
+  ROS_ERROR("ang_vel: %f",robot_state_.at(2));
+  ROS_ERROR("lin_vel: %f",robot_state_.at(3));
 }
 
 
