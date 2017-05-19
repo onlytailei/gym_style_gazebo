@@ -97,7 +97,7 @@ namespace RL {
       TaskEnvIO(
           const std::string service_name="pytorch_io_service",
           const std::string node_name="gazebo_env_io",
-          const float sleeping_time=0);
+          const float sleeping_time=0.2);
   };
 }
 

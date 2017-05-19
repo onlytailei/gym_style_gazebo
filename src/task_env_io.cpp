@@ -8,9 +8,12 @@
 #include <iostream>
 #include <assert.h>
 #include <algorithm>
+#include <chrono>
+#include <thread>
 #include <math.h>
 #include <cmath>
 #include <time.h>
+#include <mutex>
 #include <ctime>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -21,10 +24,15 @@
 #include "task_env_io.h"
 #include <typeinfo>
 
+//protect the read and write for topic vectors
+std::mutex topic_mutex;
+
 /// statecallback function
 template<typename topicType>
 void RL::GetNewTopic<topicType>::StateCallback(const topicType& msg_){
+  std::lock_guard<std::mutex> lock(topic_mutex);
   StateVector.push_back(msg_);
+  ROS_ERROR("New State vector size %d", StateVector.size());
   if (StateVector.size() > 5)
     StateVector.erase(StateVector.begin());
 }
@@ -44,7 +52,7 @@ RL::TaskEnvIO::TaskEnvIO(
   GazeboEnvIO(node_name),
   state_1(new RL::GetNewTopic<RL::STATE_1_TYPE>(this->rosNode, "/camera/depth/image_raw")),
   state_2(new RL::GetNewTopic<RL::STATE_2_TYPE>(this->rosNode, "/gazebo/model_states")),
-  laser_scan(new RL::GetNewTopic<sensor_msgs::LaserScanConstPtr>(this->rosNode, "/scan")),
+  laser_scan(new RL::GetNewTopic<sensor_msgs::LaserScanConstPtr>(this->rosNode, "/fakescan")),
   target_pose_{0,0},
   robot_state_{{0,0,0,0}}, //double brace for std::array
   sleeping_time_(sleeping_time){
@@ -67,20 +75,22 @@ bool RL::TaskEnvIO::ServiceCallback(
     gym_style_gazebo::PytorchRL::Request &req,
     gym_style_gazebo::PytorchRL::Response &res){
 
-  // TODO the terminal_flag is always false now
-  /*
   if (req.reset){
-    while (terminal_flag)
-      reset();
+    while (terminal_flag){
+      this->reset();
+      ROS_ERROR("Reset loop");
+      //ros::Duration(sleeping_time_).sleep();
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
   }
-  */
 
   ActionPub.publish(req.action);
-  //ros::Duration(sleeping_time_).sleep();
   getRobotState(); //update robot state
   res.reward = rewardCalculate();
   res.terminal = terminal_flag;
+  std::unique_lock<std::mutex> state_1_lock(topic_mutex);
   cv_ptr = cv_bridge::toCvCopy(state_1->StateVector.back(), state_1->StateVector.back()->encoding);
+  state_1_lock.unlock();
   //Build first state
   {
   res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
@@ -115,9 +125,11 @@ float RL::TaskEnvIO::rewardCalculate(){
   
   if (collision_check()){
     terminal_flag = true;
+    ROS_ERROR("Collision!!");
     return failReward;}
-  if (terminalCheck()){
+  else if (target_check()){
     terminal_flag = true;
+    ROS_ERROR("Terminal!!");
     return terminalReward;}
   else {
     terminal_flag = false;
@@ -126,8 +138,6 @@ float RL::TaskEnvIO::rewardCalculate(){
   return 0;
 }
 
-
-
 ///////////////////////
 bool RL::TaskEnvIO::terminalCheck(){
   return terminal_flag;
@@ -135,15 +145,17 @@ bool RL::TaskEnvIO::terminalCheck(){
 
 ///////////////////////
 bool RL::TaskEnvIO::collision_check(){
+  std::unique_lock<std::mutex> laser_scan_lock(topic_mutex);
   std::vector<float> range_array = laser_scan->StateVector.back()->ranges;
+  laser_scan_lock.unlock();
+  ROS_ERROR("Range array path %p", &range_array);
   range_array.erase(std::remove_if(range_array.begin(), 
         range_array.end(), 
         [](float x){return !std::isfinite(x);}), 
       range_array.end());
   float min_scan = *std::min_element(std::begin(range_array), std::end(range_array));
-  //std::cout<< "min_scan: "<< min_scan  <<std::endl;
-  
-  ROS_ERROR("min_scan: %f, typeinfo: %s", min_scan, typeid(min_scan).name());
+  //ROS_ERROR("size after remove: %ld", range_array.size());
+  //ROS_ERROR("min_scan: %f, typeinfo: %s, isnan: %s", min_scan, typeid(min_scan).name(), std::isfinite(min_scan)?"true":"false");
   return  (min_scan < collision_th)? true : false;
 }
 
@@ -154,6 +166,7 @@ bool RL::TaskEnvIO::target_check(){
 
 ///////////////////////
 bool RL::TaskEnvIO::reset() {
+  // TODO
   // Set a new target for the robot
   // Set a new position for the robot
   // Set random position for pedes
@@ -167,7 +180,9 @@ bool RL::TaskEnvIO::reset() {
 ///////////////////////
 void RL::TaskEnvIO::getRobotState(){
 
+  std::unique_lock<std::mutex> state_2_lock(topic_mutex);
   gazebo_msgs::ModelStates newStates = state_2->StateVector.back();
+  state_2_lock.unlock();
   std::vector<std::string> names = newStates.name;
   auto idx_ = std::find(names.begin(), names.end(),"mobile_base")-names.begin();
   assert(idx_ < names.size());
