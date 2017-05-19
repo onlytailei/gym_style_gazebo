@@ -70,7 +70,8 @@ RL::TaskEnvIO::TaskEnvIO(
     PytorchService = this->rosNode->advertiseService(service_name, &TaskEnvIO::ServiceCallback, this);
   }
 
-///////////////////////
+// Set a separate callbackqueue for this service callback 
+// Otherwise, the other callbacks will not work when there is a reset loop
 bool RL::TaskEnvIO::ServiceCallback(
     gym_style_gazebo::PytorchRL::Request &req,
     gym_style_gazebo::PytorchRL::Response &res){
@@ -80,7 +81,7 @@ bool RL::TaskEnvIO::ServiceCallback(
       this->reset();
       ROS_ERROR("Reset loop");
       //ros::Duration(sleeping_time_).sleep();
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      //std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
   }
 
