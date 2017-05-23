@@ -22,6 +22,7 @@
 #include <ros/console.h> //roslogging
 #include <tf/transform_datatypes.h>
 #include <geometry_msgs/Vector3.h>
+#include <gazebo_msgs/SetModelState.h>
 #include <tf/LinearMath/Matrix3x3.h>
 #include "gazebo_env_io.h"
 #include "task_env_io.h"
@@ -70,6 +71,7 @@ RL::TaskEnvIO::TaskEnvIO(
 
     ActionPub = this->rosNode->advertise<RL::ACTION_TYPE>("/mobile_base/commands/velocity", 1);
     PytorchService = this->rosNode->advertiseService(service_name, &TaskEnvIO::ServiceCallback, this);
+    SetRobotPositionClient = this->rosNode->serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state"); 
   }
 
 // Set a separate callbackqueue for this service callback 
@@ -79,6 +81,7 @@ bool RL::TaskEnvIO::ServiceCallback(
     gym_style_gazebo::PytorchRL::Response &res){
 
   if (req.reset){
+    this->reset();
     while (terminal_flag){
       this->reset();
       ROS_ERROR("Reset loop");
@@ -102,6 +105,9 @@ bool RL::TaskEnvIO::ServiceCallback(
   std::unique_lock<std::mutex> state_1_lock(topic_mutex);
   cv_ptr = cv_bridge::toCvCopy(state_1->StateVector.back(), state_1->StateVector.back()->encoding);
   state_1_lock.unlock();
+  
+  //ROS_ERROR("=================================");
+  //ROS_ERROR("Reward: %f", res.reward);
   
   {
   res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
@@ -134,17 +140,19 @@ bool RL::TaskEnvIO::ServiceCallback(
 float RL::TaskEnvIO::rewardCalculate(){
   
   if (collision_check()){
-    terminal_flag = true;
-    ROS_ERROR("Collision!!");
-    return failReward;}
+    terminal_flag = false;
+    //ROS_ERROR("Collision!!");
+    return failReward+time_discount;}
   else if (target_check()){
     terminal_flag = true;
-    ROS_ERROR("Terminal!!");
+    //ROS_ERROR("Terminal!!");
     return terminalReward;}
   else {
     terminal_flag = false;
-    return distance_coef * (previous_distance - robot_state_.at(1))-time_discount;}
-  previous_distance = robot_state_.at(1);
+    //float temp = previous_distance;
+    //previous_distance = robot_state_.at(1);
+    //return distance_coef * (temp - robot_state_.at(1))-time_discount;}
+    return time_discount;}
   return 0;
 }
 
@@ -163,8 +171,6 @@ bool RL::TaskEnvIO::collision_check(){
         [](float x){return !std::isfinite(x);}), 
       range_array.end());
   float min_scan = *std::min_element(std::begin(range_array), std::end(range_array));
-  //ROS_ERROR("size after remove: %ld", range_array.size());
-  //ROS_ERROR("min_scan: %f, typeinfo: %s, isnan: %s", min_scan, typeid(min_scan).name(), std::isfinite(min_scan)?"true":"false");
   return  (min_scan < collision_th)? true : false;
 }
 
@@ -176,13 +182,41 @@ bool RL::TaskEnvIO::target_check(){
 ///////////////////////
 bool RL::TaskEnvIO::reset() {
   // TODO
-  // Set a new target for the robot
   // Set a new position for the robot
   // Set random position for pedes
-
+  
+  // Set a new target for the robot
+  setRobotPosition();
   getRobotState(); //update robot state
+  previous_distance = robot_state_.at(1);
   rewardCalculate(); //check if it is terminal
   return true;
+}
+
+bool RL::TaskEnvIO::setRobotPosition(){
+  
+  gazebo_msgs::SetModelState SetModelState_srv;
+  geometry_msgs::Point Start_position;
+  Start_position.x = 0.0;
+  Start_position.y = 0.0;
+  Start_position.z = 0.0;
+
+  geometry_msgs::Quaternion Start_orientation;
+  Start_orientation.x = 0.0;
+  Start_orientation.y = 0.0;
+  Start_orientation.z = 0.0;
+  Start_orientation.w = 1.0;
+
+  geometry_msgs::Pose Start_pose;
+  Start_pose.position = Start_position;
+  Start_pose.orientation = Start_orientation;
+
+  gazebo_msgs::ModelState Start_modelstate;
+  Start_modelstate.model_name = (std::string)"mobile_base";
+  Start_modelstate.pose = Start_pose;
+
+  SetModelState_srv.request.model_state = Start_modelstate;
+  return SetRobotPositionClient.call(SetModelState_srv);
 }
 
 ///////////////////////
@@ -203,7 +237,6 @@ void RL::TaskEnvIO::getRobotState(){
   std::vector<std::string> names = newStates.name;
   auto idx_ = std::find(names.begin(), names.end(),"mobile_base")-names.begin();
   assert(idx_ < names.size());
-  //geometry_msgs::Twist twist_ = newStates.twist.at(idx_);
   geometry_msgs::Pose pose_ = newStates.pose.at(idx_);
   
   double yaw_= getRobotYaw(pose_.orientation);
@@ -217,15 +250,15 @@ void RL::TaskEnvIO::getRobotState(){
       pow((target_pose_.y-pose_.position.y), 2));
 
 
-  ROS_ERROR("=================================");
-  ROS_ERROR("target_pose x: %f", target_pose_.x);
-  ROS_ERROR("target_pose y: %f", target_pose_.y);
-  ROS_ERROR("robot_pose x: %f", pose_.position.x);
-  ROS_ERROR("robot_pose y: %f", pose_.position.y);
-  ROS_ERROR("angle: %f",robot_state_.at(0));
-  ROS_ERROR("distance: %f",robot_state_.at(1));
-  ROS_ERROR("ang_vel: %f",robot_state_.at(2));
-  ROS_ERROR("lin_vel: %f",robot_state_.at(3));
+  //ROS_ERROR("=================================");
+  //ROS_ERROR("target_pose x: %f", target_pose_.x);
+  //ROS_ERROR("target_pose y: %f", target_pose_.y);
+  //ROS_ERROR("robot_pose x: %f", pose_.position.x);
+  //ROS_ERROR("robot_pose y: %f", pose_.position.y);
+  //ROS_ERROR("angle: %f",robot_state_.at(0));
+  //ROS_ERROR("distance: %f",robot_state_.at(1));
+  //ROS_ERROR("ang_vel: %f",robot_state_.at(2));
+  //ROS_ERROR("lin_vel: %f",robot_state_.at(3));
 }
 
 
