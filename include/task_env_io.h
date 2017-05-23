@@ -43,13 +43,6 @@ namespace RL {
   // angle, distance, ang_vel, lin_vel
   using ROBOT_STATE = std::array<float, 4>; 
 
-  //struct RobotState {
-    //float angle;
-    //float distance;
-    //float ang_vel;
-    //float lin_vel;
-  //};
-
   struct TargetPose {
     float x;
     float y;

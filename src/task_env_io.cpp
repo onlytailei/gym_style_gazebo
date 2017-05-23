@@ -141,11 +141,9 @@ float RL::TaskEnvIO::rewardCalculate(){
   
   if (collision_check()){
     terminal_flag = false;
-    //ROS_ERROR("Collision!!");
     return failReward+time_discount;}
   else if (target_check()){
     terminal_flag = true;
-    //ROS_ERROR("Terminal!!");
     return terminalReward;}
   else {
     terminal_flag = false;
