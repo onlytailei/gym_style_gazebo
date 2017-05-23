@@ -62,7 +62,9 @@ namespace RL {
       std::shared_ptr<RL::GetNewTopic<RL::STATE_1_TYPE>> state_1;
       std::shared_ptr<RL::GetNewTopic<RL::STATE_2_TYPE>> state_2;
       std::shared_ptr<RL::GetNewTopic<sensor_msgs::LaserScanConstPtr>> laser_scan;
+      ros::ServiceClient SetRobotPositionClient;
       
+      bool setRobotPosition();
       bool collision_check();
       bool target_check();
       void getRobotState();
