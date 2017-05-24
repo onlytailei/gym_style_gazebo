@@ -164,6 +164,7 @@ bool RL::TaskEnvIO::terminalCheck(){
 ///////////////////////
 bool RL::TaskEnvIO::collision_check(){
   std::unique_lock<std::mutex> laser_scan_lock(topic_mutex);
+  assert(laser_scan->StateVector.size()>0);
   std::vector<float> range_array = laser_scan->StateVector.back()->ranges;
   laser_scan_lock.unlock();
   range_array.erase(std::remove_if(range_array.begin(), 
