@@ -68,6 +68,8 @@ RL::TaskEnvIO::TaskEnvIO(
     assert(rosNode->getParam("/TARGET_X",target_pose_.x));
     assert(rosNode->getParam("/TARGET_Y",target_pose_.y));
     assert(rosNode->getParam("/TIME_DISCOUNT",time_discount));
+    assert(rosNode->getParam("/MAX_LINEAR_VAL",max_lin_vel));
+    assert(rosNode->getParam("/MAX_ANGULAR_VAL",max_ang_vel));
 
     ActionPub = this->rosNode->advertise<RL::ACTION_TYPE>("/mobile_base/commands/velocity", 1);
     PytorchService = this->rosNode->advertiseService(service_name, &TaskEnvIO::ServiceCallback, this);
@@ -92,10 +94,10 @@ bool RL::TaskEnvIO::ServiceCallback(
   
   geometry_msgs::Twist action_out = req.action;
   //velocity angular
-  action_out.angular.z = std::copysign(1, action_out.angular.z) > 1 ? std::copysign(1, action_out.angular.z): action_out.angular.z;  
+  action_out.angular.z = (std::copysign(1, action_out.angular.z) > 1 ? std::copysign(1, action_out.angular.z): action_out.angular.z)*max_ang_vel;  
   robot_state_.at(2) = action_out.angular.z;
   //velocity linear
-  action_out.linear.x = std::abs(action_out.linear.x-0.5) > 0.5 ? (std::copysign(1, action_out.linear.x)+1)/2 : action_out.linear.x;
+  action_out.linear.x = (std::abs(action_out.linear.x-0.5) > 0.5 ? (std::copysign(1, action_out.linear.x)+1)/2 : action_out.linear.x)*max_lin_vel;
   robot_state_.at(3) = action_out.linear.x;
   
   ActionPub.publish(action_out);

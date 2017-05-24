@@ -77,7 +77,10 @@ namespace RL {
       float failReward;
       float distance_coef;
       float time_discount;
-      bool terminal_flag;      
+      float max_lin_vel;
+      float max_ang_vel;
+      bool terminal_flag; 
+
       
       const float sleeping_time_;
 
