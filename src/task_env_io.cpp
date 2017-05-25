@@ -15,6 +15,7 @@
 #include <time.h>
 #include <mutex>
 #include <ctime>
+#include <random>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -58,6 +59,8 @@ RL::TaskEnvIO::TaskEnvIO(
   laser_scan(new RL::GetNewTopic<sensor_msgs::LaserScanConstPtr>(this->rosNode, "/fakescan")),
   target_pose_{0,0},
   robot_state_{{0,0,0,0}}, //double brace for std::array
+  random_engine(0),
+  dis(-1,1),
   sleeping_time_(sleeping_time){
 
     assert(rosNode->getParam("/COLLISION_TH",collision_th));
@@ -65,8 +68,8 @@ RL::TaskEnvIO::TaskEnvIO(
     assert(rosNode->getParam("/FAIL_REWARD",failReward));
     assert(rosNode->getParam("/TERMINAL_REWARD",terminalReward));
     assert(rosNode->getParam("/TARGET_TH",target_th));
-    assert(rosNode->getParam("/TARGET_X",target_pose_.x));
-    assert(rosNode->getParam("/TARGET_Y",target_pose_.y));
+    assert(rosNode->getParam("/TARGET_X",origin_x));
+    assert(rosNode->getParam("/TARGET_Y",origin_y));
     assert(rosNode->getParam("/TIME_DISCOUNT",time_discount));
     assert(rosNode->getParam("/MAX_LINEAR_VAL",max_lin_vel));
     assert(rosNode->getParam("/MAX_ANGULAR_VAL",max_ang_vel));
@@ -185,7 +188,10 @@ bool RL::TaskEnvIO::reset() {
   // TODO
   // Set a new position for the robot
   // Set random position for pedes
-  
+  target_pose_.x = dis(random_engine) + origin_x;
+  target_pose_.y = dis(random_engine)*0.5 + origin_y;
+  rosNode->setParam("/TARGET_X",target_pose_.x);
+  rosNode->setParam("/TARGET_Y",target_pose_.y);
   // Set a new target for the robot
   setRobotPosition();
   getRobotState(); //update robot state

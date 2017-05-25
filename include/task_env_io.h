@@ -11,6 +11,7 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <random>
 #include <sensor_msgs/LaserScan.h>
 #include <std_msgs/Float32MultiArray.h>
 #include <gazebo_msgs/ModelStates.h>
@@ -79,7 +80,11 @@ namespace RL {
       float time_discount;
       float max_lin_vel;
       float max_ang_vel;
-      bool terminal_flag; 
+      bool terminal_flag;
+      float origin_x;
+      float origin_y;
+      std::mt19937 random_engine;
+      std::uniform_real_distribution<> dis;
 
       
       const float sleeping_time_;
