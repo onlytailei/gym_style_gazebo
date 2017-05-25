@@ -94,11 +94,11 @@ bool RL::TaskEnvIO::ServiceCallback(
   
   geometry_msgs::Twist action_out = req.action;
   //velocity angular
-  action_out.angular.z = (std::copysign(1, action_out.angular.z) > 1 ? std::copysign(1, action_out.angular.z): action_out.angular.z)*max_ang_vel;  
-  robot_state_.at(2) = action_out.angular.z;
+  //action_out.angular.z = (std::copysign(1, action_out.angular.z) > 1 ? std::copysign(1, action_out.angular.z): action_out.angular.z)*max_ang_vel;  
+  robot_state_.at(2) = action_out.angular.z*max_ang_vel;
   //velocity linear
-  action_out.linear.x = (std::abs(action_out.linear.x-0.5) > 0.5 ? (std::copysign(1, action_out.linear.x)+1)/2 : action_out.linear.x)*max_lin_vel;
-  robot_state_.at(3) = action_out.linear.x;
+  //action_out.linear.x = (std::abs(action_out.linear.x-0.5) > 0.5 ? (std::copysign(1, action_out.linear.x)+1)/2 : action_out.linear.x)*max_lin_vel;
+  robot_state_.at(3) = action_out.linear.x*max_lin_vel;
   
   ActionPub.publish(action_out);
   getRobotState(); //update robot state
