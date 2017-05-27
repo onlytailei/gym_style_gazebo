@@ -4,7 +4,7 @@
   > Mail: lei.tai@my.cityu.edu.hk
   > Created Time: Mo 08 Mai 2017 16:54:01 CEST
  ************************************************************************/
-
+#define _USE_MATH_DEFINES
 #include <iostream>
 #include <assert.h>
 #include <algorithm>
@@ -249,9 +249,10 @@ void RL::TaskEnvIO::getRobotState(){
   double yaw_= getRobotYaw(pose_.orientation);
 
   //relative angle
-  robot_state_.at(0) = atan2(target_pose_.y-pose_.position.y,
-      target_pose_.x-pose_.position.x) - yaw_;
-  
+  float angle_in = (atan2(target_pose_.y-pose_.position.y,
+      target_pose_.x-pose_.position.x) - yaw_)/M_PI;
+  robot_state_.at(0) = (std::abs(angle_in)>1? -2*std::copysign(1, angle_in)+angle_in:angle_in);
+  assert(std::abs(robot_state_.at(0))<1);
   //relative distance
   robot_state_.at(1) = sqrt(pow((target_pose_.x-pose_.position.x), 2) +
       pow((target_pose_.y-pose_.position.y), 2));
