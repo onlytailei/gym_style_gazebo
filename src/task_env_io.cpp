@@ -98,10 +98,12 @@ bool RL::TaskEnvIO::ServiceCallback(
   geometry_msgs::Twist action_out = req.action;
   //velocity angular
   //action_out.angular.z = (std::copysign(1, action_out.angular.z) > 1 ? std::copysign(1, action_out.angular.z): action_out.angular.z)*max_ang_vel;  
-  robot_state_.at(2) = action_out.angular.z*max_ang_vel;
+  robot_state_.at(2) = action_out.angular.z;
+  action_out.angular.z = action_out.angular.z*max_ang_vel;  
   //velocity linear
   //action_out.linear.x = (std::abs(action_out.linear.x-0.5) > 0.5 ? (std::copysign(1, action_out.linear.x)+1)/2 : action_out.linear.x)*max_lin_vel;
-  robot_state_.at(3) = action_out.linear.x*max_lin_vel;
+  robot_state_.at(3) = action_out.linear.x;
+  action_out.linear.x = action_out.linear.x*max_lin_vel;  
   
   ActionPub.publish(action_out);
   getRobotState(); //update robot state
@@ -188,6 +190,7 @@ bool RL::TaskEnvIO::reset() {
   // TODO
   // Set a new position for the robot
   // Set random position for pedes
+  
   target_pose_.x = dis(random_engine) + origin_x;
   target_pose_.y = dis(random_engine)*0.5 + origin_y;
   rosNode->setParam("/TARGET_X",target_pose_.x);
@@ -248,12 +251,12 @@ void RL::TaskEnvIO::getRobotState(){
   
   double yaw_= getRobotYaw(pose_.orientation);
 
-  //relative angle
+  //relative angle normalize to -1 to 1
   float angle_in = (atan2(target_pose_.y-pose_.position.y,
       target_pose_.x-pose_.position.x) - yaw_)/M_PI;
   robot_state_.at(0) = (std::abs(angle_in)>1? -2*std::copysign(1, angle_in)+angle_in:angle_in);
   assert(std::abs(robot_state_.at(0))<1);
-  //relative distance
+  //relative distance (TODO normalize)
   robot_state_.at(1) = sqrt(pow((target_pose_.x-pose_.position.x), 2) +
       pow((target_pose_.y-pose_.position.y), 2));
 
