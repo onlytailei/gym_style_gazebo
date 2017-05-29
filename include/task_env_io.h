@@ -83,8 +83,11 @@ namespace RL {
       bool terminal_flag;
       float origin_x;
       float origin_y;
+      float target_start;
+      float target_end;
       std::mt19937 random_engine;
       std::uniform_real_distribution<> dis;
+      std::uniform_real_distribution<> target_gen;
 
       
       const float sleeping_time_;

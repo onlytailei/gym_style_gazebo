@@ -60,7 +60,8 @@ RL::TaskEnvIO::TaskEnvIO(
   target_pose_{0,0},
   robot_state_{{0,0,0,0}}, //double brace for std::array
   random_engine(0),
-  dis(-1,1),
+  dis(-1,1),  // noise generator
+  target_gen(0,1),  //noise generator
   sleeping_time_(sleeping_time){
 
     assert(rosNode->getParam("/COLLISION_TH",collision_th));
@@ -70,10 +71,11 @@ RL::TaskEnvIO::TaskEnvIO(
     assert(rosNode->getParam("/TARGET_TH",target_th));
     assert(rosNode->getParam("/TARGET_X",origin_x));
     assert(rosNode->getParam("/TARGET_Y",origin_y));
+    assert(rosNode->getParam("/TARGET_START",target_start));
+    assert(rosNode->getParam("/TARGET_END",target_end));
     assert(rosNode->getParam("/TIME_DISCOUNT",time_discount));
     assert(rosNode->getParam("/MAX_LINEAR_VAL",max_lin_vel));
     assert(rosNode->getParam("/MAX_ANGULAR_VAL",max_ang_vel));
-
     ActionPub = this->rosNode->advertise<RL::ACTION_TYPE>("/mobile_base/commands/velocity", 1);
     PytorchService = this->rosNode->advertiseService(service_name, &TaskEnvIO::ServiceCallback, this);
     SetRobotPositionClient = this->rosNode->serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state"); 
@@ -87,21 +89,18 @@ bool RL::TaskEnvIO::ServiceCallback(
 
   if (req.reset){
     this->reset();
-    while (terminal_flag){
-      this->reset();
+    // reset over until the termial and collison are all free
+    while (terminal_flag or collision_check()){
       ROS_ERROR("Reset loop");
-      //ros::Duration(sleeping_time_).sleep();
-      //std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      this->reset();
     }
   }
   
   geometry_msgs::Twist action_out = req.action;
   //velocity angular
-  //action_out.angular.z = (std::copysign(1, action_out.angular.z) > 1 ? std::copysign(1, action_out.angular.z): action_out.angular.z)*max_ang_vel;  
   robot_state_.at(2) = action_out.angular.z;
   action_out.angular.z = action_out.angular.z*max_ang_vel;  
   //velocity linear
-  //action_out.linear.x = (std::abs(action_out.linear.x-0.5) > 0.5 ? (std::copysign(1, action_out.linear.x)+1)/2 : action_out.linear.x)*max_lin_vel;
   robot_state_.at(3) = action_out.linear.x;
   action_out.linear.x = action_out.linear.x*max_lin_vel;  
   
@@ -114,7 +113,7 @@ bool RL::TaskEnvIO::ServiceCallback(
   state_1_lock.unlock();
   
   //ROS_ERROR("=================================");
-  //ROS_ERROR("Reward: %f", res.reward);
+  ROS_ERROR("Reward: %f", res.reward);
   
   {
   res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
@@ -155,7 +154,7 @@ float RL::TaskEnvIO::rewardCalculate(){
   else {
     terminal_flag = false;
     //float temp = previous_distance;
-    //previous_distance = robot_state_.at(1);
+    previous_distance = robot_state_.at(1);
     //return distance_coef * (temp - robot_state_.at(1))-time_discount;}
     return time_discount;}
   return 0;
@@ -172,12 +171,17 @@ bool RL::TaskEnvIO::collision_check(){
   assert(laser_scan->StateVector.size()>0);
   std::vector<float> range_array = laser_scan->StateVector.back()->ranges;
   laser_scan_lock.unlock();
+  //float min_scan_ = *std::min_element(std::begin(range_array), std::end(range_array));
+  //float max_scan_ = *std::max_element(std::begin(range_array), std::end(range_array));
+  //ROS_ERROR("Before max: %f, min: %f", max_scan_, min_scan_);
   range_array.erase(std::remove_if(range_array.begin(), 
         range_array.end(), 
         [](float x){return !std::isfinite(x);}), 
       range_array.end());
   float min_scan = *std::min_element(std::begin(range_array), std::end(range_array));
-  return  (min_scan < collision_th)? true : false;
+  //float max_scan = *std::max_element(std::begin(range_array), std::end(range_array));
+  //ROS_ERROR("after max: %f, min: %f, range_size: %zu", max_scan, min_scan, range_array.size());
+  return  (range_array.size()==0)? true : (min_scan<collision_th?true:false);
 }
 
 /// use tf to call the robot position DEPRECATED too slow
@@ -191,8 +195,14 @@ bool RL::TaskEnvIO::reset() {
   // Set a new position for the robot
   // Set random position for pedes
   
-  target_pose_.x = dis(random_engine) + origin_x;
-  target_pose_.y = dis(random_engine)*0.5 + origin_y;
+  //ROS_ERROR("=======Reset======");
+  float _x = target_gen(random_engine)*(target_end-target_start)+target_start; 
+  float _y = target_gen(random_engine)*(target_end-target_start)+target_start;
+  target_pose_.x = std::copysign(_x, dis(random_engine));
+  target_pose_.y = std::copysign(_y, dis(random_engine));
+  
+  //target_pose_.x = dis(random_engine)*0.5 + origin_x;
+  //target_pose_.y = dis(random_engine)*0.5 + origin_y;
   rosNode->setParam("/TARGET_X",target_pose_.x);
   rosNode->setParam("/TARGET_Y",target_pose_.y);
   // Set a new target for the robot
