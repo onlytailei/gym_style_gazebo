@@ -24,6 +24,7 @@
 #include <tf/transform_datatypes.h>
 #include <geometry_msgs/Vector3.h>
 #include <gazebo_msgs/SetModelState.h>
+#include <actor_services/SetPose.h>
 #include <tf/LinearMath/Matrix3x3.h>
 #include "gazebo_env_io.h"
 #include "task_env_io.h"
@@ -79,6 +80,7 @@ RL::TaskEnvIO::TaskEnvIO(
     ActionPub = this->rosNode->advertise<RL::ACTION_TYPE>("/mobile_base/commands/velocity", 1);
     PytorchService = this->rosNode->advertiseService(service_name, &TaskEnvIO::ServiceCallback, this);
     SetRobotPositionClient = this->rosNode->serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state"); 
+    SetActorTargetClient = this->rosNode->serviceClient<actor_services::SetPose>("/actor2/SetActorTarget"); 
   }
 
 // Set a separate callbackqueue for this service callback 
@@ -192,17 +194,21 @@ bool RL::TaskEnvIO::target_check(){
 ///////////////////////
 bool RL::TaskEnvIO::reset() {
   // TODO
-  // Set a new position for the robot
   // Set random position for pedes
   
   //ROS_ERROR("=======Reset======");
+  // Set a new position for the target
   float _x = target_gen(random_engine)*(target_end-target_start)+target_start; 
   float _y = target_gen(random_engine)*(target_end-target_start)+target_start;
   target_pose_.x = std::copysign(_x, dis(random_engine));
   target_pose_.y = std::copysign(_y, dis(random_engine));
-  
-  //target_pose_.x = dis(random_engine)*0.5 + origin_x;
-  //target_pose_.y = dis(random_engine)*0.5 + origin_y;
+
+  // Set a new position for one ped
+  float target_x = target_gen(random_engine)*(1.7-0.5)+0.5; 
+  float target_y = target_gen(random_engine)*(1.7-0.5)+0.5;
+  setActorTarget(std::copysign(target_x, dis(random_engine)),
+                std::copysign(target_y, dis(random_engine)));
+
   rosNode->setParam("/TARGET_X",target_pose_.x);
   rosNode->setParam("/TARGET_Y",target_pose_.y);
   // Set a new target for the robot
@@ -237,6 +243,15 @@ bool RL::TaskEnvIO::setRobotPosition(){
 
   SetModelState_srv.request.model_state = Start_modelstate;
   return SetRobotPositionClient.call(SetModelState_srv);
+}
+
+
+bool RL::TaskEnvIO::setActorTarget(const float x_, const float y_){
+  actor_services::SetPose SetActorTarget_srv;
+  SetActorTarget_srv.request.set_flag = true;
+  SetActorTarget_srv.request.new_x = x_;
+  SetActorTarget_srv.request.new_y = y_;
+  return SetActorTargetClient.call(SetActorTarget_srv);
 }
 
 ///////////////////////
