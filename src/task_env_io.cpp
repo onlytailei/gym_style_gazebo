@@ -197,9 +197,11 @@ bool RL::TaskEnvIO::reset() {
   float _x = target_gen(random_engine)*(paramlist->robot_x_end-paramlist->robot_x_start)+paramlist->robot_x_start; 
   float _y = target_gen(random_engine)*(paramlist->robot_y_end-paramlist->robot_y_start)+paramlist->robot_y_start;
   float _q_z = dis(random_engine); 
-  float _q_w = std::sqrt(1- std::pow(_q_z,2)); 
-  setModelPosition(_x,_y,_q_z,_q_w);
-  setModelPosition(target_pose.x,target_pose.y,_q_z,_q_w, RL::TARGET_NAME);
+  float _q_w = dis(random_engine);
+  float sum_q =std::sqrt(std::pow(_q_w,2)+std::pow(_q_z,2));
+  //float _q_w = std::sqrt(1- std::pow(_q_z,2)); 
+  setModelPosition(_x,_y,_q_z/sum_q,_q_w/sum_q);
+  setModelPosition(target_pose.x,target_pose.y,_q_z/sum_q,_q_w/sum_q, RL::TARGET_NAME);
   //previous_distance = robot_state_.at(1);
   rewardCalculate(); //check if it is terminal
   return true;
