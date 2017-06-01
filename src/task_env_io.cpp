@@ -116,7 +116,7 @@ bool RL::TaskEnvIO::ServiceCallback(
   //ROS_ERROR("=================================");
   ROS_ERROR("Reward: %f", res.reward);
   //ROS_ERROR("image col row and channel: %d, %d, %d", cv_ptr->image.cols, cv_ptr->image.rows, cv_ptr->image.channels());
-  //std::cout<< "=====" <<  << "=====" << std::endl;
+  std::cout<< "=====" << state_1->StateVector.back()->encoding << "=====" << std::endl;
   
   {
   res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
