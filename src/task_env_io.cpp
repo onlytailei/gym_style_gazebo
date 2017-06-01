@@ -119,15 +119,19 @@ bool RL::TaskEnvIO::ServiceCallback(
   {
   res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
   res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
+  res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
   res.state_1.layout.dim[0].size = cv_ptr->image.rows;
-  res.state_1.layout.dim[0].stride = cv_ptr->image.cols*cv_ptr->image.rows;
+  res.state_1.layout.dim[0].stride = cv_ptr->image.cols*cv_ptr->image.rows*cv_ptr->image.channels();
   res.state_1.layout.dim[0].label = "height";
   res.state_1.layout.dim[1].size = cv_ptr->image.cols;
-  res.state_1.layout.dim[1].stride = cv_ptr->image.cols;
+  res.state_1.layout.dim[1].stride = cv_ptr->image.cols*cv_ptr->image.channels();
   res.state_1.layout.dim[1].label = "width";
+  res.state_1.layout.dim[2].size = cv_ptr->image.channels();
+  res.state_1.layout.dim[2].stride = cv_ptr->image.channels();
+  res.state_1.layout.dim[2].label = "channel";
   res.state_1.data.clear();
-  std::vector<float> output_img((float*)cv_ptr->image.data, (float*)cv_ptr->image.data + cv_ptr->image.cols * cv_ptr->image.rows);
-  res.state_1.data.reserve(cv_ptr->image.cols*cv_ptr->image.rows);
+  std::vector<float> output_img((float*)cv_ptr->image.data, (float*)cv_ptr->image.data + cv_ptr->image.cols * cv_ptr->image.rows*cv_ptr->image.channels());
+  res.state_1.data.reserve(cv_ptr->image.cols*cv_ptr->image.rows*cv_ptr->image.channels());
   res.state_1.data.insert(res.state_1.data.end(), output_img.begin(), output_img.end());
   }
   //Build second state
