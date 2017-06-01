@@ -148,7 +148,7 @@ bool RL::TaskEnvIO::ServiceCallback(
 float RL::TaskEnvIO::rewardCalculate(){
   
   if (collision_check()){
-    terminal_flag = false;
+    terminal_flag = true;
     return failReward+time_discount;}
   else if (target_check()){
     terminal_flag = true;
@@ -196,7 +196,7 @@ bool RL::TaskEnvIO::reset() {
   // TODO
   // Set random position for pedes
   
-  //ROS_ERROR("=======Reset======");
+  ROS_ERROR("=======Reset======");
   // Set a new position for the target
   float _x = target_gen(random_engine)*(target_end-target_start)+target_start; 
   float _y = target_gen(random_engine)*(target_end-target_start)+target_start;
