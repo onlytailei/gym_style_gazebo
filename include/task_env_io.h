@@ -41,11 +41,14 @@ namespace RL {
   using STATE_1_TYPE = sensor_msgs::ImageConstPtr;
   using STATE_2_TYPE = gazebo_msgs::ModelStates;
   using ACTION_TYPE = geometry_msgs::Twist;
-  // angle, distance, ang_vel, lin_vel
-  using ROBOT_STATE = std::array<float, 4>; 
+  using ACTION_TYPE = geometry_msgs::Twist;
+  // ang_velocity, lin_velocity
+  using ROBOT_STATE = std::array<float, 6>; 
+  const std::string ROBOT_NAME = "mobile_base";
+  const std::string TARGET_NAME = "Construction_Barrel";
   
   // target pose structure
-  struct TargetPose {
+  struct Pose2 {
     float x;
     float y;
   };
@@ -59,18 +62,17 @@ namespace RL {
       float collision_th;
       float target_th;
       float terminalReward;
-      float failReward;
-      float distance_coef;
+      float collisionReward;
       float time_discount;
       float max_lin_vel;
       float max_ang_vel;
       bool enable_collision_terminal;
       bool enable_continuous_control;
       bool enable_ped;
-      float origin_x;
-      float origin_y;
-      float target_start;
-      float target_end;
+      float robot_x_start;
+      float robot_x_end;
+      float robot_y_start;
+      float robot_y_end;
   };
 
 
@@ -81,27 +83,25 @@ namespace RL {
       std::shared_ptr<RL::GetNewTopic<RL::STATE_1_TYPE>> state_1;
       std::shared_ptr<RL::GetNewTopic<RL::STATE_2_TYPE>> state_2;
       std::shared_ptr<RL::GetNewTopic<sensor_msgs::LaserScanConstPtr>> laser_scan;
-      ros::ServiceClient SetRobotPositionClient;
+      ros::ServiceClient SetModelPositionClient;
       ros::ServiceClient SetActorTargetClient;
       
 
       const std::shared_ptr<ParamLoad> paramlist;
 
-      bool setRobotPosition();
+      bool setModelPosition(const float, const float, const float, const float, const std::string=RL::ROBOT_NAME);
       bool setActorTarget(const float, const float);
-      bool collision_check();
-      bool target_check();
-      void getRobotState();
-      double getRobotYaw(geometry_msgs::Quaternion &) const;
+      bool CollisionCheck() const;
+      bool TargetCheck();
       void actionPub(geometry_msgs::Twist);
 
-      float previous_distance;
       bool terminal_flag;
-      
-      RL::TargetPose target_pose_;
+      RL::Pose2 target_pose;
+
       RL::ROBOT_STATE robot_state_;
       cv_bridge::CvImagePtr cv_ptr;
       
+      // randomizatoin
       std::mt19937 random_engine;
       std::uniform_real_distribution<> dis;
       std::uniform_real_distribution<> target_gen;
