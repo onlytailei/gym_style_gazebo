@@ -18,11 +18,11 @@ namespace RL{
   class GazeboEnvIO{
        
     public:
-      ros::NodeHandlePtr rosNode;
+      ros::NodeHandlePtr rosNode_pr;
       ros::ServiceServer PytorchService;
       
       GazeboEnvIO(const std::string node_name="gazebo_env_io")
-        :rosNode(new ros::NodeHandle(node_name)){};
+        :rosNode_pr(new ros::NodeHandle(node_name)){};
       
       virtual bool ServiceCallback(gym_style_gazebo::PytorchRL::Request&,
             gym_style_gazebo::PytorchRL::Response&) =0;
