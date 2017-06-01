@@ -74,7 +74,7 @@ RL::TaskEnvIO::TaskEnvIO(
     const std::string node_name,
     const float sleeping_time):
   GazeboEnvIO(node_name),
-  state_1(new RL::GetNewTopic<RL::STATE_1_TYPE>(this->rosNode_pr, "/camera/depth/image_raw")),
+  state_1(new RL::GetNewTopic<RL::STATE_1_TYPE>(this->rosNode_pr, "/camera/rgb/image_raw")),
   state_2(new RL::GetNewTopic<RL::STATE_2_TYPE>(this->rosNode_pr, "/gazebo/model_states")),
   laser_scan(new RL::GetNewTopic<sensor_msgs::LaserScanConstPtr>(this->rosNode_pr, "/fakescan")),
   paramlist(new RL::ParamLoad(this->rosNode_pr)),
