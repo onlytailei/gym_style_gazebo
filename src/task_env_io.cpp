@@ -44,9 +44,29 @@ void RL::GetNewTopic<topicType>::StateCallback(const topicType& msg_){
 
 ////////////////////////////
 template<typename topicType>
-RL::GetNewTopic<topicType>::GetNewTopic(ros::NodeHandlePtr rosNode_,
+RL::GetNewTopic<topicType>::GetNewTopic(ros::NodeHandlePtr rosNode_pr,
     const std::string topic_name){
-  StateSub = rosNode_->subscribe(topic_name, 1, &GetNewTopic::StateCallback, this);
+  StateSub = rosNode_pr->subscribe(topic_name, 1, &GetNewTopic::StateCallback, this);
+}
+
+///////////////////////////
+RL::ParamLoad::ParamLoad(ros::NodeHandlePtr rosNode_pr_):
+  rosNodeConstPtr(rosNode_pr_){
+    assert(rosNodeConstPtr->getParam("/COLLISION_TH",collision_th));
+    assert(rosNodeConstPtr->getParam("/DISTANCE_COEF",distance_coef));
+    assert(rosNodeConstPtr->getParam("/FAIL_REWARD",failReward));
+    assert(rosNodeConstPtr->getParam("/TERMINAL_REWARD",terminalReward));
+    assert(rosNodeConstPtr->getParam("/TARGET_TH",target_th));
+    assert(rosNodeConstPtr->getParam("/TARGET_X",origin_x));
+    assert(rosNodeConstPtr->getParam("/TARGET_Y",origin_y));
+    assert(rosNodeConstPtr->getParam("/TARGET_START",target_start));
+    assert(rosNodeConstPtr->getParam("/TARGET_END",target_end));
+    assert(rosNodeConstPtr->getParam("/TIME_DISCOUNT",time_discount));
+    assert(rosNodeConstPtr->getParam("/MAX_LINEAR_VAL",max_lin_vel));
+    assert(rosNodeConstPtr->getParam("/MAX_ANGULAR_VAL",max_ang_vel));
+    assert(rosNodeConstPtr->getParam("/ENABLE_COLLISIOM_TERMINAL",enable_collision_terminal));
+    assert(rosNodeConstPtr->getParam("/ENABLE_CONTINUOUS_CONTROL",enbale_continuous_control));
+    assert(rosNodeConstPtr->getParam("/ENABLE_PED",enbale_ped));
 }
 
 ////////////////////////////
@@ -55,9 +75,10 @@ RL::TaskEnvIO::TaskEnvIO(
     const std::string node_name,
     const float sleeping_time):
   GazeboEnvIO(node_name),
-  state_1(new RL::GetNewTopic<RL::STATE_1_TYPE>(this->rosNode, "/camera/depth/image_raw")),
-  state_2(new RL::GetNewTopic<RL::STATE_2_TYPE>(this->rosNode, "/gazebo/model_states")),
-  laser_scan(new RL::GetNewTopic<sensor_msgs::LaserScanConstPtr>(this->rosNode, "/fakescan")),
+  state_1(new RL::GetNewTopic<RL::STATE_1_TYPE>(this->rosNode_pr, "/camera/depth/image_raw")),
+  state_2(new RL::GetNewTopic<RL::STATE_2_TYPE>(this->rosNode_pr, "/gazebo/model_states")),
+  laser_scan(new RL::GetNewTopic<sensor_msgs::LaserScanConstPtr>(this->rosNode_pr, "/fakescan")),
+  paramlist(new RL::ParamLoad(this->rosNode_pr)),
   target_pose_{0,0},
   robot_state_{{0,0,0,0}}, //double brace for std::array
   random_engine(0),
@@ -65,22 +86,10 @@ RL::TaskEnvIO::TaskEnvIO(
   target_gen(0,1),  //noise generator
   sleeping_time_(sleeping_time){
 
-    assert(rosNode->getParam("/COLLISION_TH",collision_th));
-    assert(rosNode->getParam("/DISTANCE_COEF",distance_coef));
-    assert(rosNode->getParam("/FAIL_REWARD",failReward));
-    assert(rosNode->getParam("/TERMINAL_REWARD",terminalReward));
-    assert(rosNode->getParam("/TARGET_TH",target_th));
-    assert(rosNode->getParam("/TARGET_X",origin_x));
-    assert(rosNode->getParam("/TARGET_Y",origin_y));
-    assert(rosNode->getParam("/TARGET_START",target_start));
-    assert(rosNode->getParam("/TARGET_END",target_end));
-    assert(rosNode->getParam("/TIME_DISCOUNT",time_discount));
-    assert(rosNode->getParam("/MAX_LINEAR_VAL",max_lin_vel));
-    assert(rosNode->getParam("/MAX_ANGULAR_VAL",max_ang_vel));
-    ActionPub = this->rosNode->advertise<RL::ACTION_TYPE>("/mobile_base/commands/velocity", 1);
-    PytorchService = this->rosNode->advertiseService(service_name, &TaskEnvIO::ServiceCallback, this);
-    SetRobotPositionClient = this->rosNode->serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state"); 
-    SetActorTargetClient = this->rosNode->serviceClient<actor_services::SetPose>("/actor2/SetActorTarget"); 
+    ActionPub = this->rosNode_pr->advertise<RL::ACTION_TYPE>("/mobile_base/commands/velocity", 1);
+    PytorchService = this->rosNode_pr->advertiseService(service_name, &TaskEnvIO::ServiceCallback, this);
+    SetRobotPositionClient = this->rosNode_pr->serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state"); 
+    if (paramlist->enable_ped){SetActorTargetClient = this->rosNode_pr->serviceClient<actor_services::SetPose>("/actor2/SetActorTarget");}
   }
 
 // Set a separate callbackqueue for this service callback 
@@ -97,16 +106,7 @@ bool RL::TaskEnvIO::ServiceCallback(
       this->reset();
     }
   }
-  
-  geometry_msgs::Twist action_out = req.action;
-  //velocity angular
-  robot_state_.at(2) = action_out.angular.z;
-  action_out.angular.z = action_out.angular.z*max_ang_vel;  
-  //velocity linear
-  robot_state_.at(3) = action_out.linear.x;
-  action_out.linear.x = action_out.linear.x*max_lin_vel;  
-  
-  ActionPub.publish(action_out);
+  actionPub(req.action); 
   getRobotState(); //update robot state
   res.reward = rewardCalculate();
   res.terminal = terminal_flag;
@@ -144,21 +144,38 @@ bool RL::TaskEnvIO::ServiceCallback(
   return true;
 }
 
+void RL::TaskEnvIO::actionPub(geometry_msgs::Twist action_out){
+  
+  if (paramlist->enable_continuous_control){
+    //velocity angular
+    robot_state_.at(2) = action_out.angular.z;
+    action_out.angular.z = action_out.angular.z*paramlist->max_ang_vel;  
+    //velocity linear
+    robot_state_.at(3) = action_out.linear.x;
+    action_out.linear.x = action_out.linear.x*paramlist->max_lin_vel;  
+    
+    ActionPub.publish(action_out);
+  }
+  else {
+    //TODO: pub the action and return the velocity realtime
+    ActionPub.publish(action_out);
+  };
+}
+
 ///////////////////////
 float RL::TaskEnvIO::rewardCalculate(){
-  
   if (collision_check()){
-    terminal_flag = false;
-    return failReward+time_discount;}
+    terminal_flag = paramlist->enable_collision_terminal;
+    return paramlist->failReward;}
   else if (target_check()){
     terminal_flag = true;
-    return terminalReward;}
+    return paramlist->terminalReward;}
   else {
     terminal_flag = false;
     //float temp = previous_distance;
     previous_distance = robot_state_.at(1);
     //return distance_coef * (temp - robot_state_.at(1))-time_discount;}
-    return time_discount;}
+    return paramlist->time_discount;}
   return 0;
 }
 
@@ -183,12 +200,12 @@ bool RL::TaskEnvIO::collision_check(){
   float min_scan = *std::min_element(std::begin(range_array), std::end(range_array));
   //float max_scan = *std::max_element(std::begin(range_array), std::end(range_array));
   //ROS_ERROR("after max: %f, min: %f, range_size: %zu", max_scan, min_scan, range_array.size());
-  return  (range_array.size()==0)? true : (min_scan<collision_th?true:false);
+  return  (range_array.size()==0)? true : (min_scan< (paramlist->collision_th)?true:false);
 }
 
 /// use tf to call the robot position DEPRECATED too slow
 bool RL::TaskEnvIO::target_check(){
-  return (robot_state_.at(1) <target_th)? true : false;
+  return (robot_state_.at(1) <paramlist->target_th)? true : false;
 }
 
 ///////////////////////
@@ -198,8 +215,8 @@ bool RL::TaskEnvIO::reset() {
   
   //ROS_ERROR("=======Reset======");
   // Set a new position for the target
-  float _x = target_gen(random_engine)*(target_end-target_start)+target_start; 
-  float _y = target_gen(random_engine)*(target_end-target_start)+target_start;
+  float _x = target_gen(random_engine)*(paramlist->target_end-paramlist->target_start)+paramlist->target_start; 
+  float _y = target_gen(random_engine)*(paramlist->target_end-paramlist->target_start)+paramlist->target_start;
   target_pose_.x = std::copysign(_x, dis(random_engine));
   target_pose_.y = std::copysign(_y, dis(random_engine));
 
@@ -209,8 +226,8 @@ bool RL::TaskEnvIO::reset() {
   setActorTarget(std::copysign(target_x, dis(random_engine)),
                 std::copysign(target_y, dis(random_engine)));
 
-  rosNode->setParam("/TARGET_X",target_pose_.x);
-  rosNode->setParam("/TARGET_Y",target_pose_.y);
+  rosNode_pr->setParam("/TARGET_X",target_pose_.x);
+  rosNode_pr->setParam("/TARGET_Y",target_pose_.y);
   // Set a new target for the robot
   setRobotPosition();
   getRobotState(); //update robot state
@@ -286,67 +303,10 @@ void RL::TaskEnvIO::getRobotState(){
       pow((target_pose_.y-pose_.position.y), 2));
 
 
+
   //ROS_ERROR("=================================");
   //ROS_ERROR("target_pose x: %f", target_pose_.x);
   //ROS_ERROR("target_pose y: %f", target_pose_.y);
-  //ROS_ERROR("robot_pose x: %f", pose_.position.x);
-  //ROS_ERROR("robot_pose y: %f", pose_.position.y);
-  //ROS_ERROR("angle: %f",robot_state_.at(0));
-  //ROS_ERROR("distance: %f",robot_state_.at(1));
-  //ROS_ERROR("ang_vel: %f",robot_state_.at(2));
-  //ROS_ERROR("lin_vel: %f",robot_state_.at(3));
 }
 
 
-/// use tf to call the robot pose and speed DEPRECATED too slow
-float RL::TaskEnvIO::getRobotStateTF(){
-  std::clock_t c_start = std::clock();
-  tf::StampedTransform transform_;
-  try{
-    tf_listener.lookupTransform("base_link",
-        "target_pose",
-        ros::Time(0),
-        transform_);
-  }
-  catch (tf::TransformException ex){
-    ROS_ERROR("%s",ex.what());
-  }
-
-  std::clock_t c_end = std::clock();
-  std::cout<< "call target tf time: "<<c_end-c_start<<std::endl;
-
-  float angle_ = atan2(transform_.getOrigin().y(),
-      transform_.getOrigin().x());
-
-  float distance_ = sqrt(pow(transform_.getOrigin().x(), 2) +
-      pow(transform_.getOrigin().y(), 2));
-
-  std::cout<<"angle: "<<angle_<<std::endl;
-  std::cout<<"distance: "<<distance_<<std::endl;
-
-  std::clock_t c_start_2 = std::clock();
-  geometry_msgs::Twist twsit_;
-  try{
-    tf_listener.lookupTwist("default_world",
-        "base_link",
-        ros::Time(0),
-        ros::Duration(0.01),
-        twsit_ );
-  }
-  catch (tf::TransformException ex){
-    ROS_ERROR("%s",ex.what());
-  }
-
-  std::clock_t c_end_2 = std::clock();
-  std::cout<< "call twist tf time: "<<c_end_2-c_start_2<<std::endl;
-
-  float angle_vel_ = twsit_.angular.z;
-
-  float lin_vel_ = sqrt(pow(twsit_.linear.x, 2) +
-      pow(twsit_.linear.y, 2));
-
-  std::cout<<"angular vel:  "<<angle_vel_<<std::endl;
-  std::cout<<"linear vel: "<<lin_vel_<<std::endl;
-
-  return 0;
-}

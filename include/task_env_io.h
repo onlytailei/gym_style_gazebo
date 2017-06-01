@@ -43,11 +43,36 @@ namespace RL {
   using ACTION_TYPE = geometry_msgs::Twist;
   // angle, distance, ang_vel, lin_vel
   using ROBOT_STATE = std::array<float, 4>; 
-
+  
+  // target pose structure
   struct TargetPose {
     float x;
     float y;
   };
+
+  // Param Class
+  class ParamLoad{
+    private:
+      const ros::NodeHandlePtr rosNodeConstPtr;
+    public:
+      ParamLoad(ros::NodeHandlePtr);
+      float collision_th;
+      float target_th;
+      float terminalReward;
+      float failReward;
+      float distance_coef;
+      float time_discount;
+      float max_lin_vel;
+      float max_ang_vel;
+      bool enable_collision_terminal;
+      bool enable_continuous_control;
+      bool enable_ped;
+      float origin_x;
+      float origin_y;
+      float target_start;
+      float target_end;
+  };
+
 
   // Main class inherit from gazeboenvio
   class TaskEnvIO : public RL::GazeboEnvIO{
@@ -59,34 +84,24 @@ namespace RL {
       ros::ServiceClient SetRobotPositionClient;
       ros::ServiceClient SetActorTargetClient;
       
+
+      const std::shared_ptr<ParamLoad> paramlist;
+
       bool setRobotPosition();
       bool setActorTarget(const float, const float);
       bool collision_check();
       bool target_check();
       void getRobotState();
       double getRobotYaw(geometry_msgs::Quaternion &) const;
+      void actionPub(geometry_msgs::Twist);
 
-      float getRobotStateTF(); //Deprecated
-      tf::TransformListener tf_listener; //Deprecated
+      float previous_distance;
+      bool terminal_flag;
       
       RL::TargetPose target_pose_;
       RL::ROBOT_STATE robot_state_;
       cv_bridge::CvImagePtr cv_ptr;
       
-      float collision_th;
-      float target_th;
-      float previous_distance;
-      float terminalReward;
-      float failReward;
-      float distance_coef;
-      float time_discount;
-      float max_lin_vel;
-      float max_ang_vel;
-      bool terminal_flag;
-      float origin_x;
-      float origin_y;
-      float target_start;
-      float target_end;
       std::mt19937 random_engine;
       std::uniform_real_distribution<> dis;
       std::uniform_real_distribution<> target_gen;
