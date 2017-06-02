@@ -18,6 +18,7 @@
 #include <gazebo_msgs/ModelState.h>
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/Twist.h>
+#include <geometry_msgs/Quaternion.h>
 #include <cv_bridge/cv_bridge.h>
 #include <thread>
 #include <tf/tf.h>
@@ -89,7 +90,7 @@ namespace RL {
 
       const std::shared_ptr<ParamLoad> paramlist;
 
-      bool setModelPosition(const float, const float, const float, const float, const std::string=RL::ROBOT_NAME);
+      bool setModelPosition(const float, const float, const geometry_msgs::Quaternion, const std::string=RL::ROBOT_NAME);
       bool setActorTarget(const float, const float);
       bool CollisionCheck() const;
       bool TargetCheck();

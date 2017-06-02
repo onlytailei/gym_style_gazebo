@@ -101,7 +101,7 @@ bool RL::TaskEnvIO::ServiceCallback(
   if (req.reset){
     this->reset();
     // reset over until the termial and collison are all free
-    while (terminal_flag or CollisionCheck()){
+    while (terminal_flag || CollisionCheck()){
       ROS_ERROR("Reset loop");
       this->reset();
     }
@@ -116,7 +116,6 @@ bool RL::TaskEnvIO::ServiceCallback(
   //ROS_ERROR("=================================");
   ROS_ERROR("Reward: %f", res.reward);
   //ROS_ERROR("image col row and channel: %d, %d, %d", cv_ptr->image.cols, cv_ptr->image.rows, cv_ptr->image.channels());
-  std::cout<< "=====" << state_1->StateVector.back()->encoding << "=====" << std::endl;
   
   {
   res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
@@ -133,13 +132,13 @@ bool RL::TaskEnvIO::ServiceCallback(
   res.state_1.layout.dim[2].label = "channel";
   res.state_1.data.clear();
   // convert CV_16UC3 to CV_32FC3 so that we do not need to change the service head files. 
-  cv::Mat _imgf;
+  const cv::Mat _imgf;
   cv_ptr->image.convertTo(_imgf, CV_32FC3);
-  std::vector<float> output_img((float*)_imgf.data, (float*)_imgf.data + cv_ptr->image.cols * cv_ptr->image.rows*cv_ptr->image.channels());
+  const std::vector<float> output_img((float*)_imgf.data, (float*)_imgf.data + cv_ptr->image.cols * cv_ptr->image.rows*cv_ptr->image.channels());
   res.state_1.data.reserve(cv_ptr->image.cols*cv_ptr->image.rows*cv_ptr->image.channels());
   res.state_1.data.insert(res.state_1.data.end(), output_img.begin(), output_img.end());
   }
-  //Build second state
+  //Build second state  NOTE: right now useless
   {
   res.state_2.layout.dim.push_back(std_msgs::MultiArrayDimension());
   res.state_2.layout.dim[0].size = robot_state_.size();
@@ -202,21 +201,18 @@ bool RL::TaskEnvIO::reset() {
     setActorTarget(std::copysign(target_x, dis(random_engine)),
                 std::copysign(target_y, dis(random_engine)));
   }
-  // Set a new position for the robot
-  float _x = target_gen(random_engine)*(paramlist->robot_x_end-paramlist->robot_x_start)+paramlist->robot_x_start; 
-  float _y = target_gen(random_engine)*(paramlist->robot_y_end-paramlist->robot_y_start)+paramlist->robot_y_start;
-  float _q_z = dis(random_engine); 
-  float _q_w = dis(random_engine);
-  float sum_q =std::sqrt(std::pow(_q_w,2)+std::pow(_q_z,2));
-  //float _q_w = std::sqrt(1- std::pow(_q_z,2)); 
-  setModelPosition(_x,_y,_q_z/sum_q,_q_w/sum_q);
-  setModelPosition(target_pose.x,target_pose.y,_q_z/sum_q,_q_w/sum_q, RL::TARGET_NAME);
-  //previous_distance = robot_state_.at(1);
+  // Set a new position for the robot and target, if change target position, should also chagne the br of target
+  const float _x = target_gen(random_engine)*(paramlist->robot_x_end-paramlist->robot_x_start)+paramlist->robot_x_start; 
+  const float _y = target_gen(random_engine)*(paramlist->robot_y_end-paramlist->robot_y_start)+paramlist->robot_y_start;
+  const geometry_msgs::Quaternion _q_robot = tf::createQuaternionMsgFromYaw(dis(random_engine)*3.14);
+  const geometry_msgs::Quaternion _q_target = tf::createQuaternionMsgFromYaw(dis(random_engine)*3.14);
+  setModelPosition(_x,_y,_q_robot);
+  setModelPosition(target_pose.x,target_pose.y,_q_target, RL::TARGET_NAME);
   rewardCalculate(); //check if it is terminal
   return true;
 }
 
-bool RL::TaskEnvIO::setModelPosition(const float x, const float y, const float q_z, const float q_w, const std::string model_name_ ){
+bool RL::TaskEnvIO::setModelPosition(const float x, const float y, const geometry_msgs::Quaternion q, const std::string model_name_ ){
   
   gazebo_msgs::SetModelState SetModelState_srv;
   geometry_msgs::Point Start_position;
@@ -224,15 +220,15 @@ bool RL::TaskEnvIO::setModelPosition(const float x, const float y, const float q
   Start_position.y = y;
   Start_position.z = 0.0;
 
-  geometry_msgs::Quaternion Start_orientation;
-  Start_orientation.x = 0.0;
-  Start_orientation.y = 0.0;
-  Start_orientation.z = q_z;
-  Start_orientation.w = q_w;
+  //geometry_msgs::Quaternion Start_orientation;
+  //Start_orientation.x = 0.0;
+  //Start_orientation.y = 0.0;
+  //Start_orientation.z = q_z;
+  //Start_orientation.w = q_w;
 
   geometry_msgs::Pose Start_pose;
   Start_pose.position = Start_position;
-  Start_pose.orientation = Start_orientation;
+  Start_pose.orientation = q;
 
   gazebo_msgs::ModelState Start_modelstate;
   Start_modelstate.model_name = (std::string)model_name_;
@@ -273,21 +269,18 @@ bool RL::TaskEnvIO::TargetCheck(){
   geometry_msgs::Pose pose_ = newStates.pose.at(idx_);
   geometry_msgs::Pose barrel_pose_ = newStates.pose.at(target_idx_);
   
-  geometry_msgs::Twist robot_twist = newStates.twist.at(idx_);
-  robot_state_.at(0) = robot_twist.linear.x;
-  robot_state_.at(1) = robot_twist.linear.y;
-  robot_state_.at(2) = robot_twist.linear.z;
-  robot_state_.at(3) = robot_twist.angular.x;
-  robot_state_.at(4) = robot_twist.angular.y;
-  robot_state_.at(5) = robot_twist.angular.z;
+  // TODO: about robot speed useless now
+  //geometry_msgs::Twist robot_twist = newStates.twist.at(idx_);
+  //robot_state_.at(0) = robot_twist.linear.x;
+  //robot_state_.at(1) = robot_twist.linear.y;
+  //robot_state_.at(2) = robot_twist.linear.z;
+  //robot_state_.at(3) = robot_twist.angular.x;
+  //robot_state_.at(4) = robot_twist.angular.y;
+  //robot_state_.at(5) = robot_twist.angular.z;
   
   float target_distance = sqrt(pow((barrel_pose_.position.x-pose_.position.x), 2) +
       pow((barrel_pose_.position.y-pose_.position.y), 2));
   return (target_distance <paramlist->target_th)? true : false;
-
-  //ROS_ERROR("=================================");
-  //ROS_ERROR("target_pose x: %f", target_pose_.x);
-  //ROS_ERROR("target_pose y: %f", target_pose_.y);
 }
 
 
