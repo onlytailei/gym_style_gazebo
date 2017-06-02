@@ -132,7 +132,7 @@ bool RL::TaskEnvIO::ServiceCallback(
   res.state_1.layout.dim[2].label = "channel";
   res.state_1.data.clear();
   // convert CV_16UC3 to CV_32FC3 so that we do not need to change the service head files. 
-  const cv::Mat _imgf;
+  cv::Mat _imgf;
   cv_ptr->image.convertTo(_imgf, CV_32FC3);
   const std::vector<float> output_img((float*)_imgf.data, (float*)_imgf.data + cv_ptr->image.cols * cv_ptr->image.rows*cv_ptr->image.channels());
   res.state_1.data.reserve(cv_ptr->image.cols*cv_ptr->image.rows*cv_ptr->image.channels());
