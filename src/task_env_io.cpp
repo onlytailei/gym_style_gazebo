@@ -109,35 +109,38 @@ bool RL::TaskEnvIO::ServiceCallback(
   actionPub(req.action); 
   res.reward = rewardCalculate();
   res.terminal = terminal_flag;
-  std::unique_lock<std::mutex> state_1_lock(topic_mutex);
-  cv_ptr = cv_bridge::toCvCopy(state_1->StateVector.back(), state_1->StateVector.back()->encoding);
-  state_1_lock.unlock();
   
   //ROS_ERROR("=================================");
   ROS_ERROR("Reward: %f", res.reward);
-  //ROS_ERROR("image col row and channel: %d, %d, %d", cv_ptr->image.cols, cv_ptr->image.rows, cv_ptr->image.channels());
   
-  {
-  res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
-  res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
-  res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
-  res.state_1.layout.dim[0].size = cv_ptr->image.rows;
-  res.state_1.layout.dim[0].stride = cv_ptr->image.cols*cv_ptr->image.rows*cv_ptr->image.channels();
-  res.state_1.layout.dim[0].label = "height";
-  res.state_1.layout.dim[1].size = cv_ptr->image.cols;
-  res.state_1.layout.dim[1].stride = cv_ptr->image.cols*cv_ptr->image.channels();
-  res.state_1.layout.dim[1].label = "width";
-  res.state_1.layout.dim[2].size = cv_ptr->image.channels();
-  res.state_1.layout.dim[2].stride = cv_ptr->image.channels();
-  res.state_1.layout.dim[2].label = "channel";
-  res.state_1.data.clear();
-  // convert CV_16UC3 to CV_32FC3 so that we do not need to change the service head files. 
-  cv::Mat _imgf;
-  cv_ptr->image.convertTo(_imgf, CV_32FC3);
-  const std::vector<float> output_img((float*)_imgf.data, (float*)_imgf.data + cv_ptr->image.cols * cv_ptr->image.rows*cv_ptr->image.channels());
-  res.state_1.data.reserve(cv_ptr->image.cols*cv_ptr->image.rows*cv_ptr->image.channels());
-  res.state_1.data.insert(res.state_1.data.end(), output_img.begin(), output_img.end());
-  }
+  std::unique_lock<std::mutex> state_1_lock(topic_mutex);
+  //cv_ptr = cv_bridge::toCvCopy(state_1->StateVector.back(), state_1->StateVector.back()->encoding);
+  res.state_1 = *(state_1->StateVector.back());
+  state_1_lock.unlock();
+  
+ 
+  //{
+  //res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
+  //res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
+  //res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
+  //res.state_1.layout.dim[0].size = cv_ptr->image.rows;
+  //res.state_1.layout.dim[0].stride = cv_ptr->image.cols*cv_ptr->image.rows*cv_ptr->image.channels();
+  //res.state_1.layout.dim[0].label = "height";
+  //res.state_1.layout.dim[1].size = cv_ptr->image.cols;
+  //res.state_1.layout.dim[1].stride = cv_ptr->image.cols*cv_ptr->image.channels();
+  //res.state_1.layout.dim[1].label = "width";
+  //res.state_1.layout.dim[2].size = cv_ptr->image.channels();
+  //res.state_1.layout.dim[2].stride = cv_ptr->image.channels();
+  //res.state_1.layout.dim[2].label = "channel";
+  //res.state_1.data.clear();
+  //// convert CV_16UC3 to CV_32FC3 so that we do not need to change the service head files. 
+  //cv::Mat _imgf;
+  //cv_ptr->image.convertTo(_imgf, CV_32FC3);
+  //const std::vector<float> output_img((float*)_imgf.data, (float*)_imgf.data + cv_ptr->image.cols * cv_ptr->image.rows*cv_ptr->image.channels());
+  //res.state_1.data.reserve(cv_ptr->image.cols*cv_ptr->image.rows*cv_ptr->image.channels());
+  //res.state_1.data.insert(res.state_1.data.end(), output_img.begin(), output_img.end());
+  //}
+  
   //Build second state  NOTE: right now useless
   {
   res.state_2.layout.dim.push_back(std_msgs::MultiArrayDimension());
