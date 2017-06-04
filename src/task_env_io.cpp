@@ -199,8 +199,8 @@ bool RL::TaskEnvIO::reset() {
   
   // Set a new position for one ped
   if (paramlist->enable_ped){
-    float target_x = target_gen(random_engine)*(1.7-0.5)+0.5; 
-    float target_y = target_gen(random_engine)*(1.7-0.5)+0.5;
+    float target_x = target_gen(random_engine)*7-3.5; 
+    float target_y = target_gen(random_engine)*7-3.5;
     setActorTarget(std::copysign(target_x, dis(random_engine)),
                 std::copysign(target_y, dis(random_engine)));
   }
