@@ -207,8 +207,8 @@ bool RL::TaskEnvIO::reset() {
   // Set a new position for the robot and target, if change target position, should also chagne the br of target
   const float _x = target_gen(random_engine)*(paramlist->robot_x_end-paramlist->robot_x_start)+paramlist->robot_x_start; 
   const float _y = target_gen(random_engine)*(paramlist->robot_y_end-paramlist->robot_y_start)+paramlist->robot_y_start;
-  const geometry_msgs::Quaternion _q_robot = tf::createQuaternionMsgFromYaw(dis(random_engine)*3.14);
-  const geometry_msgs::Quaternion _q_target = tf::createQuaternionMsgFromYaw(dis(random_engine)*3.14);
+  const geometry_msgs::Quaternion _q_robot = tf::createQuaternionMsgFromYaw(dis(random_engine)*std::acos(-1));
+  const geometry_msgs::Quaternion _q_target = tf::createQuaternionMsgFromYaw(dis(random_engine)*std::acos(-1));
   setModelPosition(_x,_y,_q_robot);
   setModelPosition(target_pose.x,target_pose.y,_q_target, RL::TARGET_NAME);
   rewardCalculate(); //check if it is terminal
