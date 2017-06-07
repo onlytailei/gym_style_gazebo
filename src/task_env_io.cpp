@@ -60,6 +60,8 @@ RL::ParamLoad::ParamLoad(ros::NodeHandlePtr rosNode_pr_):
     assert(rosNodeConstPtr->getParam("/ROBOT_X_END",robot_x_end));
     assert(rosNodeConstPtr->getParam("/ROBOT_Y_START",robot_y_start));
     assert(rosNodeConstPtr->getParam("/ROBOT_Y_END",robot_y_end));
+    assert(rosNodeConstPtr->getParam("/ROBOT_YAW_START",robot_yaw_start));
+    assert(rosNodeConstPtr->getParam("/ROBOT_YAW_END",robot_yaw_end));
     assert(rosNodeConstPtr->getParam("/TIME_DISCOUNT",time_discount));
     assert(rosNodeConstPtr->getParam("/MAX_LINEAR_VAL",max_lin_vel));
     assert(rosNodeConstPtr->getParam("/MAX_ANGULAR_VAL",max_ang_vel));
@@ -199,15 +201,16 @@ bool RL::TaskEnvIO::reset() {
   
   // Set a new position for one ped
   if (paramlist->enable_ped){
-    float target_x = target_gen(random_engine)*(1.7-0.5)+0.5; 
-    float target_y = target_gen(random_engine)*(1.7-0.5)+0.5;
+    float target_x = target_gen(random_engine)*7-3.5; 
+    float target_y = target_gen(random_engine)*7-3.5;
     setActorTarget(std::copysign(target_x, dis(random_engine)),
                 std::copysign(target_y, dis(random_engine)));
   }
   // Set a new position for the robot and target, if change target position, should also chagne the br of target
   const float _x = target_gen(random_engine)*(paramlist->robot_x_end-paramlist->robot_x_start)+paramlist->robot_x_start; 
   const float _y = target_gen(random_engine)*(paramlist->robot_y_end-paramlist->robot_y_start)+paramlist->robot_y_start;
-  const geometry_msgs::Quaternion _q_robot = tf::createQuaternionMsgFromYaw(dis(random_engine)*std::acos(-1));
+  const float _yaw = target_gen(random_engine)*(paramlist->robot_yaw_end-paramlist->robot_yaw_start)+paramlist->robot_yaw_start;
+  const geometry_msgs::Quaternion _q_robot = tf::createQuaternionMsgFromYaw(_yaw);
   const geometry_msgs::Quaternion _q_target = tf::createQuaternionMsgFromYaw(dis(random_engine)*std::acos(-1));
   setModelPosition(_x,_y,_q_robot);
   setModelPosition(target_pose.x,target_pose.y,_q_target, RL::TARGET_NAME);

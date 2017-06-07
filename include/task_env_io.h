@@ -42,7 +42,6 @@ namespace RL {
   using STATE_1_TYPE = sensor_msgs::ImageConstPtr;
   using STATE_2_TYPE = gazebo_msgs::ModelStates;
   using ACTION_TYPE = geometry_msgs::Twist;
-  using ACTION_TYPE = geometry_msgs::Twist;
   // ang_velocity, lin_velocity
   using ROBOT_STATE = std::array<float, 6>; 
   const std::string ROBOT_NAME = "mobile_base";
@@ -74,6 +73,8 @@ namespace RL {
       float robot_x_end;
       float robot_y_start;
       float robot_y_end;
+      float robot_yaw_start;
+      float robot_yaw_end;
   };
 
 
