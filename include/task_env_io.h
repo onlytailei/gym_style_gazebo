@@ -43,9 +43,11 @@ namespace RL {
   using STATE_2_TYPE = gazebo_msgs::ModelStates;
   using ACTION_TYPE = geometry_msgs::Twist;
   // ang_velocity, lin_velocity
+  const int ACTOR_NUMERS = 1;
   using ROBOT_STATE = std::array<float, 6>; 
   const std::string ROBOT_NAME = "mobile_base";
   const std::string TARGET_NAME = "Construction_Barrel";
+  const std::string ACTOR_NAME_BASE= "actor";
   
   // target pose structure
   struct Pose2 {
@@ -97,6 +99,7 @@ namespace RL {
       bool CollisionCheck() const;
       bool TargetCheck();
       void actionPub(geometry_msgs::Twist);
+      void updateRobotState(const gazebo_msgs::ModelStates, const std::vector<std::string>);
 
       bool terminal_flag;
       RL::Pose2 target_pose;

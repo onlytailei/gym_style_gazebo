@@ -118,32 +118,8 @@ bool RL::TaskEnvIO::ServiceCallback(
   ROS_ERROR("Reward: %f", res.reward);
   
   std::unique_lock<std::mutex> state_1_lock(topic_mutex);
-  //cv_ptr = cv_bridge::toCvCopy(state_1->StateVector.back(), state_1->StateVector.back()->encoding);
   res.state_1 = *(state_1->StateVector.back());
   state_1_lock.unlock();
-  
- 
-  //{
-  //res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
-  //res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
-  //res.state_1.layout.dim.push_back(std_msgs::MultiArrayDimension());
-  //res.state_1.layout.dim[0].size = cv_ptr->image.rows;
-  //res.state_1.layout.dim[0].stride = cv_ptr->image.cols*cv_ptr->image.rows*cv_ptr->image.channels();
-  //res.state_1.layout.dim[0].label = "height";
-  //res.state_1.layout.dim[1].size = cv_ptr->image.cols;
-  //res.state_1.layout.dim[1].stride = cv_ptr->image.cols*cv_ptr->image.channels();
-  //res.state_1.layout.dim[1].label = "width";
-  //res.state_1.layout.dim[2].size = cv_ptr->image.channels();
-  //res.state_1.layout.dim[2].stride = cv_ptr->image.channels();
-  //res.state_1.layout.dim[2].label = "channel";
-  //res.state_1.data.clear();
-  //// convert CV_16UC3 to CV_32FC3 so that we do not need to change the service head files. 
-  //cv::Mat _imgf;
-  //cv_ptr->image.convertTo(_imgf, CV_32FC3);
-  //const std::vector<float> output_img((float*)_imgf.data, (float*)_imgf.data + cv_ptr->image.cols * cv_ptr->image.rows*cv_ptr->image.channels());
-  //res.state_1.data.reserve(cv_ptr->image.cols*cv_ptr->image.rows*cv_ptr->image.channels());
-  //res.state_1.data.insert(res.state_1.data.end(), output_img.begin(), output_img.end());
-  //}
   
   //Build second state  NOTE: right now useless
   {
@@ -277,6 +253,7 @@ bool RL::TaskEnvIO::TargetCheck(){
   geometry_msgs::Pose pose_ = newStates.pose.at(idx_);
   geometry_msgs::Pose barrel_pose_ = newStates.pose.at(target_idx_);
  
+  updateRobotState(newStates, names);
   // TODO: about robot speed useless now 
   //geometry_msgs::Twist robot_twist = newStates.twist.at(idx_);
   //robot_state_.at(0) = robot_twist.linear.x;
@@ -291,4 +268,12 @@ bool RL::TaskEnvIO::TargetCheck(){
   return (target_distance <paramlist->target_th)? true : false;
 }
 
+void RL::TaskEnvIO::updateRobotState(const gazebo_msgs::ModelStates newStates_, const std::vector<std::string> names_){
+  for(int i=0;i<RL::ACTOR_NUMERS;i++){
+    auto idx_ = std::find(names_.begin(), names_.end(),RL::ACTOR_NAME_BASE+std::to_string(i))-names_.begin();
+    geometry_msgs::Pose actor_pose = newStates_.pose.at(idx_);
+    geometry_msgs::Twist actor_twist = newStates_.twist.at(idx_);
 
+  }
+  
+}
