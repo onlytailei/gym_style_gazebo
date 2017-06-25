@@ -109,6 +109,7 @@ bool RL::TaskEnvIO::ServiceCallback(
     }
   }
   actionPub(req.action); 
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
   res.reward = rewardCalculate();
   res.terminal = terminal_flag;
   
