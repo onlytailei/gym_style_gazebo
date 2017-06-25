@@ -32,10 +32,9 @@ namespace RL {
 
       public: std::vector<topicType> StateVector;
       private: ros::Subscriber StateSub;
-               void StateCallback(const topicType& );
+      private: void StateCallback(const topicType& );
 
-      public: 
-               GetNewTopic(ros::NodeHandlePtr, const std::string);
+      public: GetNewTopic(ros::NodeHandlePtr, const std::string);
     };
 
   // typedef
@@ -48,7 +47,7 @@ namespace RL {
   const std::string ROBOT_NAME = "mobile_base";
   const std::string TARGET_NAME = "Construction_Barrel";
   const std::string ACTOR_NAME_BASE= "actor";
-  
+
   // target pose structure
   struct Pose2 {
     float x;
@@ -90,7 +89,7 @@ namespace RL {
       std::shared_ptr<RL::GetNewTopic<sensor_msgs::LaserScanConstPtr>> laser_scan;
       ros::ServiceClient SetModelPositionClient;
       ros::ServiceClient SetActorTargetClient;
-      
+
 
       const std::shared_ptr<ParamLoad> paramlist;
 
@@ -99,20 +98,26 @@ namespace RL {
       bool CollisionCheck() const;
       bool TargetCheck();
       void actionPub(geometry_msgs::Twist);
-      void updateRobotState(const gazebo_msgs::ModelStates, const std::vector<std::string>);
+      void updatePedStates(
+          const geometry_msgs::Pose, 
+          const gazebo_msgs::ModelStates, 
+          const std::vector<std::string>);
+      
+      double getQuaternionYaw(const geometry_msgs::Quaternion &) const; 
 
       bool terminal_flag;
       RL::Pose2 target_pose;
 
-      RL::ROBOT_STATE robot_state_;
+      //RL::ROBOT_STATE robot_state_;
+      std::vector<float> robot_state_;
       cv_bridge::CvImagePtr cv_ptr;
-      
+
       // randomizatoin
       std::mt19937 random_engine;
       std::uniform_real_distribution<> dis;
       std::uniform_real_distribution<> target_gen;
 
-      
+
       const float sleeping_time_;
 
       virtual bool ServiceCallback(

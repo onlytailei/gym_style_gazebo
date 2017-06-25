@@ -69,7 +69,7 @@ RL::ParamLoad::ParamLoad(ros::NodeHandlePtr rosNode_pr_):
     assert(rosNodeConstPtr->getParam("/ENABLE_COLLISIOM_TERMINAL", enable_collision_terminal));
     assert(rosNodeConstPtr->getParam("/ENABLE_CONTINUOUS_CONTROL", enable_continuous_control));
     assert(rosNodeConstPtr->getParam("/ENABLE_PED",enable_ped));
-}
+  }
 
 ////////////////////////////
 RL::TaskEnvIO::TaskEnvIO(
@@ -79,9 +79,9 @@ RL::TaskEnvIO::TaskEnvIO(
   GazeboEnvIO(node_name),
   state_1(new RL::GetNewTopic<RL::STATE_1_TYPE>(this->rosNode_pr, "/camera/rgb/image_raw")),
   state_2(new RL::GetNewTopic<RL::STATE_2_TYPE>(this->rosNode_pr, "/gazebo/model_states")),
-  laser_scan(new RL::GetNewTopic<sensor_msgs::LaserScanConstPtr>(this->rosNode_pr, "/fakescan")),
+  laser_scan(new RL::GetNewTopic<sensor_msgs::LaserScanConstPtr>(this->rosNode_pr, "/scan")),
   paramlist(new RL::ParamLoad(this->rosNode_pr)),
-  robot_state_{{0,0}}, //double brace for std::array
+  //robot_state_{{0,0}}, //double brace for std::array
   random_engine(0),
   dis(-1,1),  // noise generator
   target_gen(0,1),  //noise generator
@@ -113,31 +113,31 @@ bool RL::TaskEnvIO::ServiceCallback(
   std::this_thread::sleep_for(std::chrono::milliseconds(paramlist->action_sleep_time));
   res.reward = rewardCalculate();
   res.terminal = terminal_flag;
-  
+
   //ROS_ERROR("=================================");
   ROS_ERROR("Reward: %f", res.reward);
-  
+
   std::unique_lock<std::mutex> state_1_lock(topic_mutex);
   res.state_1 = *(state_1->StateVector.back());
   state_1_lock.unlock();
-  
+
   //Build second state  NOTE: right now useless
   {
-  res.state_2.layout.dim.push_back(std_msgs::MultiArrayDimension());
-  res.state_2.layout.dim[0].size = robot_state_.size();
-  res.state_2.layout.dim[0].stride = robot_state_.size();
-  res.state_2.layout.dim[0].label = "roobot state";
-  res.state_2.data.clear();
-  res.state_2.data.reserve(robot_state_.size());
-  res.state_2.data.insert(res.state_2.data.end(), robot_state_.begin(),robot_state_.end());
+    res.state_2.layout.dim.push_back(std_msgs::MultiArrayDimension());
+    res.state_2.layout.dim[0].size = robot_state_.size();
+    res.state_2.layout.dim[0].stride = robot_state_.size();
+    res.state_2.layout.dim[0].label = "roobot state";
+    res.state_2.data.clear();
+    res.state_2.data.reserve(robot_state_.size());
+    res.state_2.data.insert(res.state_2.data.end(), robot_state_.begin(),robot_state_.end());
   }
   return true;
 }
 
 void RL::TaskEnvIO::actionPub(geometry_msgs::Twist action_out){
-    action_out.angular.z = action_out.angular.z*paramlist->max_ang_vel;  
-    action_out.linear.x = action_out.linear.x*paramlist->max_lin_vel;  
-    ActionPub.publish(action_out);
+  action_out.angular.z = action_out.angular.z*paramlist->max_ang_vel;  
+  action_out.linear.x = action_out.linear.x*paramlist->max_lin_vel;  
+  ActionPub.publish(action_out);
 }
 
 ///////////////////////
@@ -176,13 +176,13 @@ bool RL::TaskEnvIO::CollisionCheck() const{
 
 ///////////////////////
 bool RL::TaskEnvIO::reset() {
-  
+
   // Set a new position for one ped
   if (paramlist->enable_ped){
     float target_x = target_gen(random_engine)*7-3.5; 
     float target_y = target_gen(random_engine)*7-3.5;
     setActorTarget(std::copysign(target_x, dis(random_engine)),
-                std::copysign(target_y, dis(random_engine)));
+        std::copysign(target_y, dis(random_engine)));
   }
   // Set a new position for the robot and target, if change target position, should also chagne the br of target
   const float _x = target_gen(random_engine)*(paramlist->robot_x_end-paramlist->robot_x_start)+paramlist->robot_x_start; 
@@ -197,7 +197,7 @@ bool RL::TaskEnvIO::reset() {
 }
 
 bool RL::TaskEnvIO::setModelPosition(const float x, const float y, const geometry_msgs::Quaternion q, const std::string model_name_ ){
-  
+
   gazebo_msgs::SetModelState SetModelState_srv;
   geometry_msgs::Point Start_position;
   Start_position.x = x;
@@ -233,11 +233,11 @@ bool RL::TaskEnvIO::setActorTarget(const float x_, const float y_){
 
 ///////////////////////
 //double RL::TaskEnvIO::getRobotYaw(geometry_msgs::Quaternion &state_quat_) const {
-    //tf::Quaternion quat;
-    //tf::quaternionMsgToTF(state_quat_, quat);
-    //double roll, pitch, yaw;
-    //tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
-    //return yaw;
+//tf::Quaternion quat;
+//tf::quaternionMsgToTF(state_quat_, quat);
+//double roll, pitch, yaw;
+//tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+//return yaw;
 //}
 
 ///////////////////////
@@ -252,28 +252,41 @@ bool RL::TaskEnvIO::TargetCheck(){
   assert(idx_ < names.size() && target_idx_ < names.size());
   geometry_msgs::Pose pose_ = newStates.pose.at(idx_);
   geometry_msgs::Pose barrel_pose_ = newStates.pose.at(target_idx_);
- 
-  updateRobotState(newStates, names);
-  // TODO: about robot speed useless now 
-  //geometry_msgs::Twist robot_twist = newStates.twist.at(idx_);
-  //robot_state_.at(0) = robot_twist.linear.x;
-  //robot_state_.at(1) = robot_twist.linear.y;
-  //robot_state_.at(2) = robot_twist.linear.z;
-  //robot_state_.at(3) = robot_twist.angular.x;
-  //robot_state_.at(4) = robot_twist.angular.y;
-  //robot_state_.at(5) = robot_twist.angular.z;
+  
+  // update the ped related information
+  updatePedStates(pose_, newStates, names);
   
   float target_distance = sqrt(pow((barrel_pose_.position.x-pose_.position.x), 2) +
       pow((barrel_pose_.position.y-pose_.position.y), 2));
   return (target_distance <paramlist->target_th)? true : false;
 }
 
-void RL::TaskEnvIO::updateRobotState(const gazebo_msgs::ModelStates newStates_, const std::vector<std::string> names_){
+void RL::TaskEnvIO::updatePedStates(const geometry_msgs::Pose robot_pose_, const gazebo_msgs::ModelStates newStates_, const std::vector<std::string> names_){
+  robot_state_.clear();
   for(int i=0;i<RL::ACTOR_NUMERS;i++){
     auto idx_ = std::find(names_.begin(), names_.end(),RL::ACTOR_NAME_BASE+std::to_string(i))-names_.begin();
     geometry_msgs::Pose actor_pose = newStates_.pose.at(idx_);
-    geometry_msgs::Twist actor_twist = newStates_.twist.at(idx_);
-
-  }
+    //geometry_msgs::Twist actor_twist = newStates_.twist.at(idx_);
+    double robot_yaw = getQuaternionYaw(robot_pose_.orientation);
+    float angleref = (atan2(actor_pose.position.y-robot_pose_.position.y, actor_pose.position.x-robot_pose_.position.x) - robot_yaw);
   
+    assert(std::abs(angleref/M_PI)<1);
+    robot_state_.push_back(angleref/M_PI);
+    float distanceref = sqrt(pow((actor_pose.position.x-robot_pose_.position.x), 2) + pow((actor_pose.position.y-robot_pose_.position.y), 2));
+    robot_state_.push_back(distanceref);
+    robot_state_.push_back(distanceref*cos(angleref)); //xref
+    robot_state_.push_back(distanceref*sin(angleref)); //yref
+    //TODO check robot state write or not
+    //robot_state_.push_back(actor_twist.linear.y*cos(angleref)); //v_x_ref
+    //robot_state_.push_back(actor_twist.linear.y*sin(angleref)); //v_x_ref
+  }
 }
+
+double RL::TaskEnvIO::getQuaternionYaw(const geometry_msgs::Quaternion &state_quat_) const {
+  tf::Quaternion quat;
+  tf::quaternionMsgToTF(state_quat_, quat);
+  double roll, pitch, yaw;
+  tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+  return yaw;
+}
+
