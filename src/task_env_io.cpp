@@ -276,8 +276,8 @@ bool RL::TaskEnvIO::TargetCheck(){
   assert(idx_ < names.size() && target_idx_ < names.size());
   geometry_msgs::Pose pose_ = newStates.pose.at(idx_);
   geometry_msgs::Pose barrel_pose_ = newStates.pose.at(target_idx_);
-  
-  // TODO: about robot speed useless now
+ 
+  // TODO: about robot speed useless now 
   //geometry_msgs::Twist robot_twist = newStates.twist.at(idx_);
   //robot_state_.at(0) = robot_twist.linear.x;
   //robot_state_.at(1) = robot_twist.linear.y;
