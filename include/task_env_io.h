@@ -66,6 +66,7 @@ namespace RL {
       float time_discount;
       float max_lin_vel;
       float max_ang_vel;
+      int action_sleep_time;
       bool enable_collision_terminal;
       bool enable_continuous_control;
       bool enable_ped;

@@ -52,21 +52,22 @@ RL::GetNewTopic<topicType>::GetNewTopic(ros::NodeHandlePtr rosNode_pr,
 ///////////////////////////
 RL::ParamLoad::ParamLoad(ros::NodeHandlePtr rosNode_pr_):
   rosNodeConstPtr(rosNode_pr_){
-    assert(rosNodeConstPtr->getParam("/COLLISION_TH",collision_th));
-    assert(rosNodeConstPtr->getParam("/COLLISION_REWARD",collisionReward));
-    assert(rosNodeConstPtr->getParam("/TERMINAL_REWARD",terminalReward));
-    assert(rosNodeConstPtr->getParam("/TARGET_TH",target_th));
-    assert(rosNodeConstPtr->getParam("/ROBOT_X_START",robot_x_start));
-    assert(rosNodeConstPtr->getParam("/ROBOT_X_END",robot_x_end));
-    assert(rosNodeConstPtr->getParam("/ROBOT_Y_START",robot_y_start));
-    assert(rosNodeConstPtr->getParam("/ROBOT_Y_END",robot_y_end));
-    assert(rosNodeConstPtr->getParam("/ROBOT_YAW_START",robot_yaw_start));
-    assert(rosNodeConstPtr->getParam("/ROBOT_YAW_END",robot_yaw_end));
-    assert(rosNodeConstPtr->getParam("/TIME_DISCOUNT",time_discount));
-    assert(rosNodeConstPtr->getParam("/MAX_LINEAR_VAL",max_lin_vel));
-    assert(rosNodeConstPtr->getParam("/MAX_ANGULAR_VAL",max_ang_vel));
-    assert(rosNodeConstPtr->getParam("/ENABLE_COLLISIOM_TERMINAL",enable_collision_terminal));
-    assert(rosNodeConstPtr->getParam("/ENABLE_CONTINUOUS_CONTROL",enable_continuous_control));
+    assert(rosNodeConstPtr->getParam("/COLLISION_TH", collision_th));
+    assert(rosNodeConstPtr->getParam("/COLLISION_REWARD", collisionReward));
+    assert(rosNodeConstPtr->getParam("/TERMINAL_REWARD", terminalReward));
+    assert(rosNodeConstPtr->getParam("/TARGET_TH", target_th));
+    assert(rosNodeConstPtr->getParam("/ROBOT_X_START", robot_x_start));
+    assert(rosNodeConstPtr->getParam("/ROBOT_X_END", robot_x_end));
+    assert(rosNodeConstPtr->getParam("/ROBOT_Y_START", robot_y_start));
+    assert(rosNodeConstPtr->getParam("/ROBOT_Y_END", robot_y_end));
+    assert(rosNodeConstPtr->getParam("/ROBOT_YAW_START", robot_yaw_start));
+    assert(rosNodeConstPtr->getParam("/ROBOT_YAW_END", robot_yaw_end));
+    assert(rosNodeConstPtr->getParam("/ACTION_SLEEP_TIME", action_sleep_time));
+    assert(rosNodeConstPtr->getParam("/TIME_DISCOUNT", time_discount));
+    assert(rosNodeConstPtr->getParam("/MAX_LINEAR_VAL", max_lin_vel));
+    assert(rosNodeConstPtr->getParam("/MAX_ANGULAR_VAL", max_ang_vel));
+    assert(rosNodeConstPtr->getParam("/ENABLE_COLLISIOM_TERMINAL", enable_collision_terminal));
+    assert(rosNodeConstPtr->getParam("/ENABLE_CONTINUOUS_CONTROL", enable_continuous_control));
     assert(rosNodeConstPtr->getParam("/ENABLE_PED",enable_ped));
 }
 
@@ -109,7 +110,7 @@ bool RL::TaskEnvIO::ServiceCallback(
     }
   }
   actionPub(req.action); 
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  std::this_thread::sleep_for(std::chrono::milliseconds(paramlist->action_sleep_time));
   res.reward = rewardCalculate();
   res.terminal = terminal_flag;
   
