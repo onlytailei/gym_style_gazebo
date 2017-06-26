@@ -100,7 +100,9 @@ RL::TaskEnvIO::TaskEnvIO(
 bool RL::TaskEnvIO::ServiceCallback(
     gym_style_gazebo::PytorchRL::Request &req,
     gym_style_gazebo::PytorchRL::Response &res){
-
+  
+  //std::chrono::time_point<std::chrono::system_clock> start, end;
+  //start = std::chrono::system_clock::now();
   if (req.reset){
     this->reset();
     // reset over until the termial and collison are all free
@@ -116,7 +118,8 @@ bool RL::TaskEnvIO::ServiceCallback(
 
   //ROS_ERROR("=================================");
   ROS_ERROR("Reward: %f", res.reward);
-
+   
+  //build image state  // TODO uncomment after test
   std::unique_lock<std::mutex> state_1_lock(topic_mutex);
   res.state_1 = *(state_1->StateVector.back());
   state_1_lock.unlock();
@@ -131,6 +134,10 @@ bool RL::TaskEnvIO::ServiceCallback(
     res.state_2.data.reserve(robot_state_.size());
     res.state_2.data.insert(res.state_2.data.end(), robot_state_.begin(),robot_state_.end());
   }
+  //end = std::chrono::system_clock::now();
+  //std::chrono::duration<double> elapsed_seconds = end-start;
+  //ROS_ERROR("time: %f", elapsed_seconds.count());
+
   return true;
 }
 
@@ -204,12 +211,6 @@ bool RL::TaskEnvIO::setModelPosition(const float x, const float y, const geometr
   Start_position.y = y;
   Start_position.z = 0.0;
 
-  //geometry_msgs::Quaternion Start_orientation;
-  //Start_orientation.x = 0.0;
-  //Start_orientation.y = 0.0;
-  //Start_orientation.z = q_z;
-  //Start_orientation.w = q_w;
-
   geometry_msgs::Pose Start_pose;
   Start_pose.position = Start_position;
   Start_pose.orientation = q;
@@ -265,28 +266,33 @@ void RL::TaskEnvIO::updatePedStates(const geometry_msgs::Pose robot_pose_, const
   robot_state_.clear();
   for(int i=0;i<RL::ACTOR_NUMERS;i++){
     auto idx_ = std::find(names_.begin(), names_.end(),RL::ACTOR_NAME_BASE+std::to_string(i))-names_.begin();
-    geometry_msgs::Pose actor_pose = newStates_.pose.at(idx_);
+    geometry_msgs::Pose actor_pose_ = newStates_.pose.at(idx_);
     //geometry_msgs::Twist actor_twist = newStates_.twist.at(idx_);
-    double robot_yaw = getQuaternionYaw(robot_pose_.orientation);
-    float angleref = (atan2(actor_pose.position.y-robot_pose_.position.y, actor_pose.position.x-robot_pose_.position.x) - robot_yaw);
-  
+    float robot_yaw = getQuaternionYaw(robot_pose_.orientation);
+    float actor_yaw = getQuaternionYaw(actor_pose_.orientation);
+    float angleref = (atan2(actor_pose_.position.y-robot_pose_.position.y, actor_pose_.position.x-robot_pose_.position.x) - robot_yaw);
+    
+    // actor relative position 
     assert(std::abs(angleref/M_PI)<1);
     robot_state_.push_back(angleref/M_PI);
-    float distanceref = sqrt(pow((actor_pose.position.x-robot_pose_.position.x), 2) + pow((actor_pose.position.y-robot_pose_.position.y), 2));
+    float distanceref = sqrt(pow((actor_pose_.position.x-robot_pose_.position.x), 2) + pow((actor_pose_.position.y-robot_pose_.position.y), 2));
     robot_state_.push_back(distanceref);
     robot_state_.push_back(distanceref*cos(angleref)); //xref
     robot_state_.push_back(distanceref*sin(angleref)); //yref
-    //TODO check robot state write or not
-    //robot_state_.push_back(actor_twist.linear.y*cos(angleref)); //v_x_ref
-    //robot_state_.push_back(actor_twist.linear.y*sin(angleref)); //v_x_ref
+    
+    // actor moving direction
+    float relative_yaw = (actor_yaw - robot_yaw)/M_PI - 0.5;
+    float relative_yaw_norm = (std::abs(relative_yaw)>1? -2*std::copysign(1, relative_yaw)+relative_yaw:relative_yaw);
+    assert(std::abs(relative_yaw_norm)<1);
+    robot_state_.push_back(relative_yaw_norm); //yref
   }
 }
 
-double RL::TaskEnvIO::getQuaternionYaw(const geometry_msgs::Quaternion &state_quat_) const {
+float RL::TaskEnvIO::getQuaternionYaw(const geometry_msgs::Quaternion &state_quat_) const {
   tf::Quaternion quat;
   tf::quaternionMsgToTF(state_quat_, quat);
   double roll, pitch, yaw;
   tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
-  return yaw;
+  return (float)yaw;
 }
 

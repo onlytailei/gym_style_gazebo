@@ -103,7 +103,7 @@ namespace RL {
           const gazebo_msgs::ModelStates, 
           const std::vector<std::string>);
       
-      double getQuaternionYaw(const geometry_msgs::Quaternion &) const; 
+      float getQuaternionYaw(const geometry_msgs::Quaternion &) const; 
 
       bool terminal_flag;
       RL::Pose2 target_pose;
