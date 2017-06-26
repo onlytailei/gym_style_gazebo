@@ -272,9 +272,10 @@ void RL::TaskEnvIO::updatePedStates(const geometry_msgs::Pose robot_pose_, const
     float actor_yaw = getQuaternionYaw(actor_pose_.orientation);
     float angleref = (atan2(actor_pose_.position.y-robot_pose_.position.y, actor_pose_.position.x-robot_pose_.position.x) - robot_yaw);
     
+    float angleref_norm = (std::abs(angleref)>M_PI? -2*M_PI*std::copysign(1, angleref)+angleref:angleref);
     // actor relative position 
-    assert(std::abs(angleref/M_PI)<1);
-    robot_state_.push_back(angleref/M_PI);
+    assert(std::abs(angleref_norm/M_PI)<=1);
+    robot_state_.push_back(angleref_norm/M_PI);
     float distanceref = sqrt(pow((actor_pose_.position.x-robot_pose_.position.x), 2) + pow((actor_pose_.position.y-robot_pose_.position.y), 2));
     robot_state_.push_back(distanceref);
     robot_state_.push_back(distanceref*cos(angleref)); //xref
