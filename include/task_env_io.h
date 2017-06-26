@@ -106,6 +106,7 @@ namespace RL {
       float getQuaternionYaw(const geometry_msgs::Quaternion &) const; 
 
       bool terminal_flag;
+      float ped_relative_distance;
       RL::Pose2 target_pose;
 
       //RL::ROBOT_STATE robot_state_;
