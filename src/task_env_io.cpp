@@ -106,7 +106,7 @@ bool RL::TaskEnvIO::ServiceCallback(
   if (req.reset){
     this->reset();
     // reset over until the termial and collison are all free
-    while (terminal_flag || CollisionCheck()){
+    while (terminal_flag || (ped_relative_distance<1.0) || CollisionCheck()){
       ROS_ERROR("Reset loop");
       this->reset();
     }
@@ -152,6 +152,10 @@ float RL::TaskEnvIO::rewardCalculate(){
   if (TargetCheck()){
     terminal_flag = true;
     return paramlist->terminalReward;}
+  else if (ped_relative_distance <1.3){
+    if (ped_relative_distance<1.0){return -0.1;}
+    else {return -0.1*(1.3-ped_relative_distance)-0.07;}
+  }
   else if (CollisionCheck()){
     terminal_flag = paramlist->enable_collision_terminal;
     return paramlist->collisionReward;}
@@ -255,8 +259,7 @@ bool RL::TaskEnvIO::TargetCheck(){
   geometry_msgs::Pose barrel_pose_ = newStates.pose.at(target_idx_);
   
   // update the ped related information
-  updatePedStates(pose_, newStates, names);
-  
+  updatePedStates(pose_, newStates, names); 
   float target_distance = sqrt(pow((barrel_pose_.position.x-pose_.position.x), 2) +
       pow((barrel_pose_.position.y-pose_.position.y), 2));
   return (target_distance <paramlist->target_th)? true : false;
@@ -279,7 +282,8 @@ void RL::TaskEnvIO::updatePedStates(const geometry_msgs::Pose robot_pose_, const
     robot_state_.push_back(distanceref);
     robot_state_.push_back(distanceref*cos(angleref)); //xref
     robot_state_.push_back(distanceref*sin(angleref)); //yref
-    
+    ped_relative_distance = distanceref;
+
     // actor moving direction
     float relative_yaw = (actor_yaw - robot_yaw)/M_PI - 0.5;
     float relative_yaw_norm = (std::abs(relative_yaw)>1? -2*std::copysign(1, relative_yaw)+relative_yaw:relative_yaw);
