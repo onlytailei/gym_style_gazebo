@@ -104,6 +104,8 @@ namespace RL {
           const std::vector<std::string>);
       
       float getQuaternionYaw(const geometry_msgs::Quaternion &) const; 
+      
+      std::vector<int> actor_range;
 
       bool terminal_flag;
       float ped_relative_distance;

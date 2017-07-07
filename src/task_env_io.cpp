@@ -82,11 +82,12 @@ RL::TaskEnvIO::TaskEnvIO(
   laser_scan(new RL::GetNewTopic<sensor_msgs::LaserScanConstPtr>(this->rosNode_pr, "/scan")),
   paramlist(new RL::ParamLoad(this->rosNode_pr)),
   //robot_state_{{0,0}}, //double brace for std::array
+  actor_range(RL::ACTOR_NUMERS),
   random_engine(0),
   dis(-1,1),  // noise generator
   target_gen(0,1),  //noise generator
   sleeping_time_(sleeping_time){
-
+    std::iota(actor_range.begin(),actor_range.end(),0);
     assert(rosNode_pr->getParam("/TARGET_X",target_pose.x));
     assert(rosNode_pr->getParam("/TARGET_Y",target_pose.y));
     ActionPub = this->rosNode_pr->advertise<RL::ACTION_TYPE>("/mobile_base/commands/velocity", 1);
@@ -268,7 +269,9 @@ bool RL::TaskEnvIO::TargetCheck(){
 void RL::TaskEnvIO::updatePedStates(const geometry_msgs::Pose robot_pose_, const gazebo_msgs::ModelStates newStates_, const std::vector<std::string> names_){
   robot_state_.clear();
   std::vector<float> distance_vector;
-  for(int i=0;i<RL::ACTOR_NUMERS;i++){
+  std::random_shuffle(actor_range.begin(), actor_range.end());
+  //for(int i=0;i<RL::ACTOR_NUMERS;i++){
+  for(int i: actor_range){
     auto idx_ = std::find(names_.begin(), names_.end(),RL::ACTOR_NAME_BASE+std::to_string(i))-names_.begin();
     geometry_msgs::Pose actor_pose_ = newStates_.pose.at(idx_);
     //geometry_msgs::Twist actor_twist = newStates_.twist.at(idx_);
