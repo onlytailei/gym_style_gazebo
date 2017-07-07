@@ -267,6 +267,7 @@ bool RL::TaskEnvIO::TargetCheck(){
 
 void RL::TaskEnvIO::updatePedStates(const geometry_msgs::Pose robot_pose_, const gazebo_msgs::ModelStates newStates_, const std::vector<std::string> names_){
   robot_state_.clear();
+  std::vector<float> distance_vector;
   for(int i=0;i<RL::ACTOR_NUMERS;i++){
     auto idx_ = std::find(names_.begin(), names_.end(),RL::ACTOR_NAME_BASE+std::to_string(i))-names_.begin();
     geometry_msgs::Pose actor_pose_ = newStates_.pose.at(idx_);
@@ -283,7 +284,7 @@ void RL::TaskEnvIO::updatePedStates(const geometry_msgs::Pose robot_pose_, const
     robot_state_.push_back(distanceref);
     robot_state_.push_back(distanceref*cos(angleref)); //xref
     robot_state_.push_back(distanceref*sin(angleref)); //yref
-    ped_relative_distance = distanceref;
+    distance_vector.push_back(distanceref);
 
     // actor moving direction
     float relative_yaw = (actor_yaw - robot_yaw)/M_PI - 0.5;
@@ -291,6 +292,8 @@ void RL::TaskEnvIO::updatePedStates(const geometry_msgs::Pose robot_pose_, const
     assert(std::abs(relative_yaw_norm)<1);
     robot_state_.push_back(relative_yaw_norm); //yref
   }
+  //find min element in all of the peds
+  ped_relative_distance = *std::min_element(std::begin(distance_vector),std::end(distance_vector));
 }
 
 float RL::TaskEnvIO::getQuaternionYaw(const geometry_msgs::Quaternion &state_quat_) const {

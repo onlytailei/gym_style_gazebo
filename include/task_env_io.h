@@ -42,7 +42,7 @@ namespace RL {
   using STATE_2_TYPE = gazebo_msgs::ModelStates;
   using ACTION_TYPE = geometry_msgs::Twist;
   // ang_velocity, lin_velocity
-  const int ACTOR_NUMERS = 1;
+  const int ACTOR_NUMERS = 3;
   using ROBOT_STATE = std::array<float, 6>; 
   const std::string ROBOT_NAME = "mobile_base";
   const std::string TARGET_NAME = "Construction_Barrel";
