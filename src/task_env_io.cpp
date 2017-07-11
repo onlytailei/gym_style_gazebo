@@ -55,6 +55,7 @@ RL::ParamLoad::ParamLoad(ros::NodeHandlePtr rosNode_pr_):
     assert(rosNodeConstPtr->getParam("/COLLISION_TH", collision_th));
     assert(rosNodeConstPtr->getParam("/COLLISION_REWARD", collisionReward));
     assert(rosNodeConstPtr->getParam("/TERMINAL_REWARD", terminalReward));
+    assert(rosNodeConstPtr->getParam("/HARD_PED_TH", hard_ped_th));
     assert(rosNodeConstPtr->getParam("/TARGET_TH", target_th));
     assert(rosNodeConstPtr->getParam("/ROBOT_X_START", robot_x_start));
     assert(rosNodeConstPtr->getParam("/ROBOT_X_END", robot_x_end));
@@ -153,9 +154,10 @@ float RL::TaskEnvIO::rewardCalculate(){
   if (TargetCheck()){
     terminal_flag = true;
     return paramlist->terminalReward;}
-  else if (ped_relative_distance <1.3){
-    if (ped_relative_distance<1.0){return -0.1;}
-    else {return -0.1*(1.3-ped_relative_distance)-0.07;}
+  // from 0.3 to hard_ped_th, -0.02 to -0.05
+  else if (ped_relative_distance < (paramlist->hard_ped_th+0.3)){
+    if (ped_relative_distance<paramlist->hard_ped_th){return paramlist->collisionReward;}
+    else {return -0.1*(paramlist->hard_ped_th+0.3-ped_relative_distance)-0.02;}
   }
   else if (CollisionCheck()){
     terminal_flag = paramlist->enable_collision_terminal;

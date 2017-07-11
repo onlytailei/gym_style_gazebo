@@ -77,8 +77,8 @@ namespace RL {
       float robot_y_end;
       float robot_yaw_start;
       float robot_yaw_end;
+      float hard_ped_th;
   };
-
 
   // Main class inherit from gazeboenvio
   class TaskEnvIO : public RL::GazeboEnvIO{
