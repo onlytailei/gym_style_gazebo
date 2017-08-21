@@ -271,7 +271,9 @@ bool RL::TaskEnvIO::TargetCheck(){
 void RL::TaskEnvIO::updatePedStates(const geometry_msgs::Pose robot_pose_, const gazebo_msgs::ModelStates newStates_, const std::vector<std::string> names_){
   robot_state_.clear();
   std::vector<float> distance_vector;
+
   std::random_shuffle(actor_range.begin(), actor_range.end());
+  
   //for(int i=0;i<RL::ACTOR_NUMERS;i++){
   for(int i: actor_range){
     auto idx_ = std::find(names_.begin(), names_.end(),RL::ACTOR_NAME_BASE+std::to_string(i))-names_.begin();
@@ -298,6 +300,7 @@ void RL::TaskEnvIO::updatePedStates(const geometry_msgs::Pose robot_pose_, const
     robot_state_.push_back(relative_yaw_norm); //yref
   }
   //find min element in all of the peds
+  
   ped_relative_distance = *std::min_element(std::begin(distance_vector),std::end(distance_vector));
 }
 
