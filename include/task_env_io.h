@@ -7,7 +7,6 @@
 
 #ifndef _TASK_ENV_IO_H
 #define _TASK_ENV_IO_H
-
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -44,8 +43,8 @@ namespace RL {
   // ang_velocity, lin_velocity
   const int ACTOR_NUMERS = 3;
   using ROBOT_STATE = std::array<float, 6>; 
-  const std::string ROBOT_NAME = "mobile_base";
-  const std::string TARGET_NAME = "Construction_Barrel";
+  const std::string ROBOT_NAME = "turtlebot3_burger";
+  //const std::string TARGET_NAME = "Construction_Barrel";
   const std::string ACTOR_NAME_BASE= "actor";
 
   // target pose structure
@@ -97,7 +96,7 @@ namespace RL {
       bool setActorTarget(const float, const float);
       bool CollisionCheck() const;
       bool TargetCheck();
-      void actionPub(geometry_msgs::Twist);
+      void actionPub(const float, const float);
       void updatePedStates(
           const geometry_msgs::Pose, 
           const gazebo_msgs::ModelStates, 
@@ -124,8 +123,8 @@ namespace RL {
       const float sleeping_time_;
 
       virtual bool ServiceCallback(
-          gym_style_gazebo::PytorchRL::Request&,
-          gym_style_gazebo::PytorchRL::Response&);
+          gym_style_gazebo::SocialForce::Request&,
+          gym_style_gazebo::SocialForce::Response&);
 
       virtual float rewardCalculate();
       virtual bool terminalCheck();

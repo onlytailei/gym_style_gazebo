@@ -67,6 +67,7 @@ find_package(OpenCV REQUIRED)
 add_service_files(
     FILES
     PytorchRL.srv
+    SocialForce.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -144,6 +145,7 @@ include_directories(./include)
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
+
 add_executable(task_env_service src/main.cpp src/task_env_io.cpp)
 target_link_libraries(task_env_service ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 

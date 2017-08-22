@@ -12,6 +12,7 @@
 #include <ros/ros.h>
 #include <thread>
 #include <gym_style_gazebo/PytorchRL.h>
+#include <gym_style_gazebo/SocialForce.h>
 
 namespace RL{
   
@@ -24,8 +25,9 @@ namespace RL{
       GazeboEnvIO(const std::string node_name="gazebo_env_io")
         :rosNode_pr(new ros::NodeHandle(node_name)){};
       
-      virtual bool ServiceCallback(gym_style_gazebo::PytorchRL::Request&,
-            gym_style_gazebo::PytorchRL::Response&) =0;
+      virtual bool ServiceCallback(
+          gym_style_gazebo::SocialForce::Request&,
+          gym_style_gazebo::SocialForce::Response&) =0;
 
       virtual float rewardCalculate() =0; 
       
