@@ -265,7 +265,7 @@ bool RL::TaskEnvIO::TargetCheck(){
   //geometry_msgs::Pose barrel_pose_ = newStates.pose.at(target_idx_);
   
   // update the ped related information
-  updatePedStates(pose_, newStates, names); 
+  //updatePedStates(pose_, newStates, names); 
   float target_distance = sqrt(pow((target_pose.x-pose_.position.x), 2) +
       pow((target_pose.y-pose_.position.y), 2));
   return (target_distance <paramlist->target_th)? true : false;
