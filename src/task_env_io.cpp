@@ -110,19 +110,21 @@ bool RL::TaskEnvIO::ServiceCallback(
       //ROS_ERROR("Reset loop");
       //this->reset();
     //}
+  
   // TODO find the right now localization and check the distance
-  actionPub(req.sf_force_x, req.sf_force_y); 
+  //actionPub(req.sf_force_x, req.sf_force_y); 
   
   std::this_thread::sleep_for(std::chrono::milliseconds(paramlist->action_sleep_time));
   
   // TODO two local check functions
   res.reward = rewardCalculate();
-  res.terminal = terminal_flag;
 
-  //ROS_ERROR("=================================");
+  res.terminal = false; //terminal_flag;
+
+  // ROS_ERROR("=================================");
   ROS_ERROR("Reward: %f", res.reward);
    
-  //build image state  // TODO uncomment after test
+  //build image state
   std::unique_lock<std::mutex> state_1_lock(topic_mutex);
   res.depth_img = *(state_1->StateVector.back());
   state_1_lock.unlock();
@@ -153,20 +155,20 @@ void RL::TaskEnvIO::actionPub(const float sf_x, const float sf_y){
 
 ///////////////////////
 float RL::TaskEnvIO::rewardCalculate(){
-  if (TargetCheck()){
-    terminal_flag = true;
-    return paramlist->terminalReward;}
-  // from 0.3 to hard_ped_th, -0.02 to -0.05
-  else if (ped_relative_distance < (paramlist->hard_ped_th+0.3)){
-    if (ped_relative_distance<paramlist->hard_ped_th){return paramlist->collisionReward;}
-    else {return -0.1*(paramlist->hard_ped_th+0.3-ped_relative_distance)-0.02;}
-  }
-  else if (CollisionCheck()){
-    terminal_flag = paramlist->enable_collision_terminal;
-    return paramlist->collisionReward;}
-  else {
-    terminal_flag = false;
-    return paramlist->time_discount;}
+  //if (TargetCheck()){
+    //terminal_flag = true;
+    //return paramlist->terminalReward;}
+  //// from 0.3 to hard_ped_th, -0.02 to -0.05
+  //else if (ped_relative_distance < (paramlist->hard_ped_th+0.3)){
+    //if (ped_relative_distance<paramlist->hard_ped_th){return paramlist->collisionReward;}
+    //else {return -0.1*(paramlist->hard_ped_th+0.3-ped_relative_distance)-0.02;}
+  //}
+  //else if (CollisionCheck()){
+    //terminal_flag = paramlist->enable_collision_terminal;
+    //return paramlist->collisionReward;}
+  //else {
+    //terminal_flag = false;
+    //return paramlist->time_discount;}
   return 0;
 }
 
@@ -254,21 +256,22 @@ bool RL::TaskEnvIO::setActorTarget(const float x_, const float y_){
 ///////////////////////
 bool RL::TaskEnvIO::TargetCheck(){
 
-  std::unique_lock<std::mutex> state_2_lock(topic_mutex);
-  gazebo_msgs::ModelStates newStates = state_2->StateVector.back();
-  state_2_lock.unlock();
-  std::vector<std::string> names = newStates.name;
-  auto idx_ = std::find(names.begin(), names.end(),RL::ROBOT_NAME)-names.begin();
-  //auto target_idx_ = std::find(names.begin(), names.end(),RL::TARGET_NAME)-names.begin();
-  //assert(idx_ < names.size() && target_idx_ < names.size());
-  geometry_msgs::Pose pose_ = newStates.pose.at(idx_);
-  //geometry_msgs::Pose barrel_pose_ = newStates.pose.at(target_idx_);
+  //std::unique_lock<std::mutex> state_2_lock(topic_mutex);
+  //gazebo_msgs::ModelStates newStates = state_2->StateVector.back();
+  //state_2_lock.unlock();
+  //std::vector<std::string> names = newStates.name;
+  //auto idx_ = std::find(names.begin(), names.end(),RL::ROBOT_NAME)-names.begin();
+  ////auto target_idx_ = std::find(names.begin(), names.end(),RL::TARGET_NAME)-names.begin();
+  ////assert(idx_ < names.size() && target_idx_ < names.size());
+  //geometry_msgs::Pose pose_ = newStates.pose.at(idx_);
+  ////geometry_msgs::Pose barrel_pose_ = newStates.pose.at(target_idx_);
   
-  // update the ped related information
-  //updatePedStates(pose_, newStates, names); 
-  float target_distance = sqrt(pow((target_pose.x-pose_.position.x), 2) +
-      pow((target_pose.y-pose_.position.y), 2));
-  return (target_distance <paramlist->target_th)? true : false;
+  //// update the ped related information
+  ////updatePedStates(pose_, newStates, names); 
+  //float target_distance = sqrt(pow((target_pose.x-pose_.position.x), 2) +
+      //pow((target_pose.y-pose_.position.y), 2));
+  //return (target_distance <paramlist->target_th)? true : false;
+  return true;
 }
 
 //void RL::TaskEnvIO::updatePedStates(const geometry_msgs::Pose robot_pose_, const gazebo_msgs::ModelStates newStates_, const std::vector<std::string> names_){
