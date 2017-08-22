@@ -3,7 +3,6 @@ bool reset
 
 -----
 sensor_msgs/Image state_1
-#std_msgs/Float32MultiArray state_1
 std_msgs/Float32MultiArray state_2
 bool terminal
 float32 reward

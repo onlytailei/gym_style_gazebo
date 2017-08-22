@@ -24,6 +24,6 @@ if __name__ == '__main__':
         br.sendTransform((target_x, target_y, 0.0),
                 (0.0, 0.0, 0.0, 1.0),
                 rospy.Time.now(),
-                "target_pose",
-                "default_world")
+                "odom",
+                "map")
         rate.sleep()

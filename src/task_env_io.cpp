@@ -194,20 +194,21 @@ bool RL::TaskEnvIO::CollisionCheck() const{
 bool RL::TaskEnvIO::reset() {
 
   // Set a new position for one ped
-  if (paramlist->enable_ped){
-    float target_x = target_gen(random_engine)*7-3.5; 
-    float target_y = target_gen(random_engine)*7-3.5;
-    setActorTarget(std::copysign(target_x, dis(random_engine)),
-        std::copysign(target_y, dis(random_engine)));
-  }
+  //if (paramlist->enable_ped){
+    //float target_x = target_gen(random_engine)*7-3.5; 
+    //float target_y = target_gen(random_engine)*7-3.5;
+    //setActorTarget(std::copysign(target_x, dis(random_engine)),
+        //std::copysign(target_y, dis(random_engine)));
+  //}
+  
   // Set a new position for the robot and target, if change target position, should also chagne the br of target
   const float _x = target_gen(random_engine)*(paramlist->robot_x_end-paramlist->robot_x_start)+paramlist->robot_x_start; 
   const float _y = target_gen(random_engine)*(paramlist->robot_y_end-paramlist->robot_y_start)+paramlist->robot_y_start;
   const float _yaw = target_gen(random_engine)*(paramlist->robot_yaw_end-paramlist->robot_yaw_start)+paramlist->robot_yaw_start;
   const geometry_msgs::Quaternion _q_robot = tf::createQuaternionMsgFromYaw(_yaw);
-  const geometry_msgs::Quaternion _q_target = tf::createQuaternionMsgFromYaw(dis(random_engine)*std::acos(-1));
+  //const geometry_msgs::Quaternion _q_target = tf::createQuaternionMsgFromYaw(dis(random_engine)*std::acos(-1));
   setModelPosition(_x,_y,_q_robot);
-  setModelPosition(target_pose.x,target_pose.y,_q_target, RL::TARGET_NAME);
+  //setModelPosition(target_pose.x,target_pose.y,_q_target, RL::TARGET_NAME);
   rewardCalculate(); //check if it is terminal
   return true;
 }
