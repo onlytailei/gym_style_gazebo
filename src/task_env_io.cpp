@@ -260,7 +260,7 @@ bool RL::TaskEnvIO::TargetCheck(){
   std::vector<std::string> names = newStates.name;
   auto idx_ = std::find(names.begin(), names.end(),RL::ROBOT_NAME)-names.begin();
   //auto target_idx_ = std::find(names.begin(), names.end(),RL::TARGET_NAME)-names.begin();
-  assert(idx_ < names.size() && target_idx_ < names.size());
+  //assert(idx_ < names.size() && target_idx_ < names.size());
   geometry_msgs::Pose pose_ = newStates.pose.at(idx_);
   //geometry_msgs::Pose barrel_pose_ = newStates.pose.at(target_idx_);
   
