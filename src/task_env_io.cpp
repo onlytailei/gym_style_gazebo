@@ -146,6 +146,11 @@ bool RL::TaskEnvIO::ServiceCallback(
   return true;
 }
 
+
+void RL::TaskEnvIO::desiredForce(){
+
+}
+
 void RL::TaskEnvIO::actionPub(const float sf_x, const float sf_y){
   //action_out.angular.z = action_out.angular.z*paramlist->max_ang_vel;  
   //action_out.linear.x = action_out.linear.x*paramlist->max_lin_vel;  
