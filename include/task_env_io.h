@@ -96,6 +96,7 @@ namespace RL {
       bool setActorTarget(const float, const float);
       bool CollisionCheck() const;
       bool TargetCheck();
+      void DesiredForce();
       void actionPub(const float, const float);
       void updatePedStates(
           const geometry_msgs::Pose, 

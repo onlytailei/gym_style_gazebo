@@ -87,7 +87,6 @@ RL::TaskEnvIO::TaskEnvIO(
   sleeping_time_(sleeping_time){
     assert(rosNode_pr->getParam("/TARGET_X",target_pose.x));
     assert(rosNode_pr->getParam("/TARGET_Y",target_pose.y));
-    // TODO check the velocity topic of tb3
     ActionPub = this->rosNode_pr->advertise<RL::ACTION_TYPE>("/mobile_base/commands/velocity", 1);
     PytorchService = this->rosNode_pr->advertiseService(service_name, &TaskEnvIO::ServiceCallback, this);
     SetModelPositionClient = this->rosNode_pr->serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state"); 
@@ -147,7 +146,10 @@ bool RL::TaskEnvIO::ServiceCallback(
 }
 
 
-void RL::TaskEnvIO::desiredForce(){
+void RL::TaskEnvIO::DesiredForce(){
+  // TODO get robot pose
+  // get target, choose the direction
+  
 
 }
 
@@ -279,41 +281,42 @@ bool RL::TaskEnvIO::TargetCheck(){
   return true;
 }
 
-//void RL::TaskEnvIO::updatePedStates(const geometry_msgs::Pose robot_pose_, const gazebo_msgs::ModelStates newStates_, const std::vector<std::string> names_){
-  //robot_state_.clear();
-  //std::vector<float> distance_vector;
+void RL::TaskEnvIO::updatePedStates(const geometry_msgs::Pose robot_pose_, const gazebo_msgs::ModelStates newStates_, const std::vector<std::string> names_){
 
-  //std::random_shuffle(actor_range.begin(), actor_range.end());
+  robot_state_.clear();
+  std::vector<float> distance_vector;
+
+  std::random_shuffle(actor_range.begin(), actor_range.end());
   
-  ////for(int i=0;i<RL::ACTOR_NUMERS;i++){
-  //for(int i: actor_range){
-    //auto idx_ = std::find(names_.begin(), names_.end(),RL::ACTOR_NAME_BASE+std::to_string(i))-names_.begin();
-    //geometry_msgs::Pose actor_pose_ = newStates_.pose.at(idx_);
-    ////geometry_msgs::Twist actor_twist = newStates_.twist.at(idx_);
-    //float robot_yaw = getQuaternionYaw(robot_pose_.orientation);
-    //float actor_yaw = getQuaternionYaw(actor_pose_.orientation);
-    //float angleref = (atan2(actor_pose_.position.y-robot_pose_.position.y, actor_pose_.position.x-robot_pose_.position.x) - robot_yaw);
+  //for(int i=0;i<RL::ACTOR_NUMERS;i++){
+  for(int i: actor_range){
+    auto idx_ = std::find(names_.begin(), names_.end(),RL::ACTOR_NAME_BASE+std::to_string(i))-names_.begin();
+    geometry_msgs::Pose actor_pose_ = newStates_.pose.at(idx_);
+    //geometry_msgs::Twist actor_twist = newStates_.twist.at(idx_);
+    float robot_yaw = getQuaternionYaw(robot_pose_.orientation);
+    float actor_yaw = getQuaternionYaw(actor_pose_.orientation);
+    float angleref = (atan2(actor_pose_.position.y-robot_pose_.position.y, actor_pose_.position.x-robot_pose_.position.x) - robot_yaw);
     
-    //float angleref_norm = (std::abs(angleref)>M_PI? -2*M_PI*std::copysign(1, angleref)+angleref:angleref);
-    //// actor relative position 
-    //assert(std::abs(angleref_norm/M_PI)<=1);
-    //robot_state_.push_back(angleref_norm/M_PI);
-    //float distanceref = sqrt(pow((actor_pose_.position.x-robot_pose_.position.x), 2) + pow((actor_pose_.position.y-robot_pose_.position.y), 2));
-    //robot_state_.push_back(distanceref);
-    //robot_state_.push_back(distanceref*cos(angleref)); //xref
-    //robot_state_.push_back(distanceref*sin(angleref)); //yref
-    //distance_vector.push_back(distanceref);
+    float angleref_norm = (std::abs(angleref)>M_PI? -2*M_PI*std::copysign(1, angleref)+angleref:angleref);
+    // actor relative position 
+    assert(std::abs(angleref_norm/M_PI)<=1);
+    robot_state_.push_back(angleref_norm/M_PI);
+    float distanceref = sqrt(pow((actor_pose_.position.x-robot_pose_.position.x), 2) + pow((actor_pose_.position.y-robot_pose_.position.y), 2));
+    robot_state_.push_back(distanceref);
+    robot_state_.push_back(distanceref*cos(angleref)); //xref
+    robot_state_.push_back(distanceref*sin(angleref)); //yref
+    distance_vector.push_back(distanceref);
 
-    //// actor moving direction
-    //float relative_yaw = (actor_yaw - robot_yaw)/M_PI - 0.5;
-    //float relative_yaw_norm = (std::abs(relative_yaw)>1? -2*std::copysign(1, relative_yaw)+relative_yaw:relative_yaw);
-    //assert(std::abs(relative_yaw_norm)<1);
-    //robot_state_.push_back(relative_yaw_norm); //yref
-  //}
-  ////find min element in all of the peds
+    // actor moving direction
+    float relative_yaw = (actor_yaw - robot_yaw)/M_PI - 0.5;
+    float relative_yaw_norm = (std::abs(relative_yaw)>1? -2*std::copysign(1, relative_yaw)+relative_yaw:relative_yaw);
+    assert(std::abs(relative_yaw_norm)<1);
+    robot_state_.push_back(relative_yaw_norm); //yref
+  }
+  //find min element in all of the peds
   
-  //ped_relative_distance = *std::min_element(std::begin(distance_vector),std::end(distance_vector));
-//}
+  ped_relative_distance = *std::min_element(std::begin(distance_vector),std::end(distance_vector));
+}
 
 //float RL::TaskEnvIO::getQuaternionYaw(const geometry_msgs::Quaternion &state_quat_) const {
   //tf::Quaternion quat;
