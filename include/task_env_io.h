@@ -22,6 +22,7 @@
 #include <thread>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
+#include <ignition/math.hh>
 #include "gazebo_env_io.h"
 
 namespace RL {
@@ -42,7 +43,7 @@ namespace RL {
   using ACTION_TYPE = geometry_msgs::Twist;
   // ang_velocity, lin_velocity
   const int ACTOR_NUMERS = 3;
-  using ROBOT_STATE = std::array<float, 6>; 
+  //using ROBOT_STATE = std::array<float, 6>; 
   const std::string ROBOT_NAME = "turtlebot3_burger";
   //const std::string TARGET_NAME = "Construction_Barrel";
   const std::string ACTOR_NAME_BASE= "actor";
@@ -87,6 +88,7 @@ namespace RL {
       std::shared_ptr<RL::GetNewTopic<RL::STATE_2_TYPE>> state_2;
       std::shared_ptr<RL::GetNewTopic<sensor_msgs::LaserScanConstPtr>> laser_scan;
       ros::ServiceClient SetModelPositionClient;
+      ros::ServiceClient GetModelPositionClient;
       ros::ServiceClient SetActorTargetClient;
 
 
@@ -94,9 +96,10 @@ namespace RL {
 
       bool setModelPosition(const float, const float, const geometry_msgs::Quaternion, const std::string=RL::ROBOT_NAME);
       bool setActorTarget(const float, const float);
-      bool CollisionCheck() const;
-      bool TargetCheck();
-      void DesiredForce();
+      bool CollisionCheck(const ignition::math::Pose3d) const;
+      bool TargetCheck(const ignition::math::Pose3d);
+      geometry_msgs::Pose findPosebyName(const std::string);
+      ignition::math::Pose3d gazePose2IgnPose(const geometry_msgs::Pose);
       void actionPub(const float, const float);
       void updatePedStates(
           const geometry_msgs::Pose, 
@@ -105,14 +108,18 @@ namespace RL {
       
       float getQuaternionYaw(const geometry_msgs::Quaternion &) const; 
       
-      std::vector<int> actor_range;
-
       bool terminal_flag;
       float ped_relative_distance;
-      RL::Pose2 target_pose;
+      ignition::math::Vector3d target_pose;
+      ignition::math::Pose3d robot_ignition_state;
+      
+      float social_force_param;
+      float desired_force_param;
+
+      gazebo_msgs::ModelState robot_model_state;
+      gazebo_msgs::ModelStates newStates;
 
       //RL::ROBOT_STATE robot_state_;
-      std::vector<float> robot_state_;
       cv_bridge::CvImagePtr cv_ptr;
 
       // randomizatoin
@@ -127,7 +134,7 @@ namespace RL {
           gym_style_gazebo::SocialForce::Request&,
           gym_style_gazebo::SocialForce::Response&);
 
-      virtual float rewardCalculate();
+      virtual float rewardCalculate(const ignition::math::Pose3d);
       virtual bool terminalCheck();
       virtual bool reset();
 
