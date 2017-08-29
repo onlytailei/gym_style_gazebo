@@ -71,6 +71,7 @@ RL::ParamLoad::ParamLoad(ros::NodeHandlePtr rosNode_pr_):
     assert(rosNodeConstPtr->getParam("/ENABLE_CONTINUOUS_CONTROL", enable_continuous_control));
     assert(rosNodeConstPtr->getParam("/ENABLE_PED",enable_ped));
     assert(rosNodeConstPtr->getParam("/DEPTH_FOV",depth_fov));
+    assert(rosNodeConstPtr->getParam("/ACTOR_NUMBER",actor_number));
     //assert(rosNodeConstPtr->getParam("/NEIGHBOR_RANGE",neighbor_range));
   }
 
@@ -107,6 +108,7 @@ bool RL::TaskEnvIO::ServiceCallback(
   //start = std::chrono::system_clock::now();
   if (req.reset){
     this->reset();
+    ROS_ERROR("Reset the episode");
     // reset over until the termial and collison are all free
     while (CollisionCheck(robot_ignition_state)){
       ROS_ERROR("Reset loop");
@@ -165,11 +167,6 @@ float RL::TaskEnvIO::rewardCalculate(const ignition::math::Pose3d robot_ign_pose
   if (TargetCheck(robot_ign_pose_)){
     terminal_flag = true;
     return paramlist->terminalReward;}
-  //// from 0.3 to hard_ped_th, -0.02 to -0.05
-  //else if (ped_relative_distance < (paramlist->hard_ped_th+0.3)){
-    //if (ped_relative_distance<paramlist->hard_ped_th){return paramlist->collisionReward;}
-    //else {return -0.1*(paramlist->hard_ped_th+0.3-ped_relative_distance)-0.02;}
-  //}
   else if (CollisionCheck(robot_ign_pose_)){
     terminal_flag = paramlist->enable_collision_terminal;
     return paramlist->collisionReward;}
@@ -188,15 +185,18 @@ bool RL::TaskEnvIO::terminalCheck(){
 ///////////////////////
 bool RL::TaskEnvIO::CollisionCheck(ignition::math::Pose3d robot_pose_) const{
   
-  for(int i=0;i<RL::ACTOR_NUMERS;i++){
+  for(int i=0;i<paramlist->actor_number;i++){
     ignition::math::Pose3d ped_pose_ = RL::gazePose2IgnPose(findPosebyName(RL::ACTOR_NAME_BASE+std::to_string(i)));
     ignition::math::Vector3d ped_direction = ped_pose_.Pos() - robot_pose_.Pos();
     ignition::math::Angle ped_yaw = std::atan2(ped_direction.Y(), ped_direction.X()) - robot_pose_.Rot().Yaw();
     ped_yaw.Normalize();
     ROS_ERROR("ped yaw %lf, length %lf", ped_yaw.Radian(), ped_direction.Length());
-    if (std::fabs(ped_yaw.Radian()) < (paramlist->depth_fov * 0.5)/180*3.1415926 && ped_direction.Length() < paramlist->collision_th)
+    if (std::fabs(ped_yaw.Radian()) < (paramlist->depth_fov * 0.5)/180*3.1415926 && ped_direction.Length() < paramlist->collision_th){
+      ROS_ERROR("Collision confirmed!!!!");
       return true;
+    }
   }
+  ROS_ERROR("Not Collision!!!");
   return false;
 }
 
