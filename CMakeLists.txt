@@ -25,7 +25,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## System dependencies are found with CMake's conventions
 #find_package(Boost REQUIRED COMPONENTS system)
 find_package(OpenCV REQUIRED)
-
+find_package(gazebo REQUIRED)
+include_directories(${GAZEBO_INCLUDE_DIRS})
+link_directories(${GAZEBO_LIBRARY_DIRS})
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -147,7 +149,7 @@ include_directories(./include)
 ## The recommended prefix ensures that target names across packages don't collide
 
 add_executable(task_env_service src/main.cpp src/task_env_io.cpp)
-target_link_libraries(task_env_service ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+target_link_libraries(task_env_service ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${GAZEBO_LIBRARIES})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

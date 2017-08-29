@@ -71,6 +71,8 @@ RL::ParamLoad::ParamLoad(ros::NodeHandlePtr rosNode_pr_):
     assert(rosNodeConstPtr->getParam("/ENABLE_COLLISIOM_TERMINAL", enable_collision_terminal));
     assert(rosNodeConstPtr->getParam("/ENABLE_CONTINUOUS_CONTROL", enable_continuous_control));
     assert(rosNodeConstPtr->getParam("/ENABLE_PED",enable_ped));
+    assert(rosNodeConstPtr->getParam("/DEPTH_FOV",depth_fov));
+    assert(rosNodeConstPtr->getParam("/NEIGHBOR_RANGE",neighbor_range));
   }
 
 ////////////////////////////
@@ -122,7 +124,7 @@ bool RL::TaskEnvIO::ServiceCallback(
   this->newStates = state_2->StateVector.back();
   state_2_lock.unlock();
   
-  robot_ignition_state = gazePose2IgnPose(findPosebyName(RL::ROBOT_NAME));
+  robot_ignition_state = RL::gazePose2IgnPose(findPosebyName(RL::ROBOT_NAME));
   
   // TODO terminal check and collision check in reward calculate
   res.reward = rewardCalculate(robot_ignition_state);
@@ -185,18 +187,27 @@ bool RL::TaskEnvIO::terminalCheck(){
 }
 
 ///////////////////////
-bool RL::TaskEnvIO::CollisionCheck(ignition::math::Pose3d) const{
+bool RL::TaskEnvIO::CollisionCheck(ignition::math::Pose3d robot_pose_) const{
 //TODO revise collision check function
-  std::unique_lock<std::mutex> laser_scan_lock(topic_mutex);
-  assert(laser_scan->StateVector.size()>0);
-  std::vector<float> range_array = laser_scan->StateVector.back()->ranges;
-  laser_scan_lock.unlock();
-  range_array.erase(std::remove_if(range_array.begin(), 
-        range_array.end(), 
-        [](float x){return !std::isfinite(x);}), 
-      range_array.end());
-  float min_scan = *std::min_element(std::begin(range_array), std::end(range_array));
-  return  (range_array.size()==0)? true : (min_scan< (paramlist->collision_th)?true:false);
+  
+  for(int i=0;i<RL::ACTOR_NUMERS;i++){
+    ignition::math::Pose3d ped_pose_ = RL::gazePose2IgnPose(findPosebyName(RL::ACTOR_NAME_BASE+std::to_string(i)));
+    ignition::math::Vector3d ped_direction = ped_pose_.Pos() - robot_pose_.Pos();
+    ignition::math::Angle ped_yaw = std::atan2(ped_direction.Y(), ped_direction.X()) - robot_pose_.Rot().Yaw();
+    if (std::fabs(ped_yaw.Radian()) < paramlist->depth_fov * 0.5 && ped_direction.Length() < paramlist->neighbor_range)
+      return true;
+  }
+  return false;
+  //std::unique_lock<std::mutex> laser_scan_lock(topic_mutex);
+  //assert(laser_scan->StateVector.size()>0);
+  //std::vector<float> range_array = laser_scan->StateVector.back()->ranges;
+  //laser_scan_lock.unlock();
+  //range_array.erase(std::remove_if(range_array.begin(), 
+        //range_array.end(), 
+        //[](float x){return !std::isfinite(x);}), 
+      //range_array.end());
+  //float min_scan = *std::min_element(std::begin(range_array), std::end(range_array));
+  //return  (range_array.size()==0)? true : (min_scan< (paramlist->collision_th)?true:false);
 }
 
 
@@ -219,7 +230,7 @@ bool RL::TaskEnvIO::reset() {
   const geometry_msgs::Quaternion _q_robot = tf::createQuaternionMsgFromYaw(_yaw);
   setModelPosition(_x,_y,_q_robot);
   //setModelPosition(target_pose.x,target_pose.y,_q_target, RL::TARGET_NAME);
-  rewardCalculate(); //check if it is terminal
+  //rewardCalculate(); //check if it is terminal
   return true;
 }
 
@@ -261,16 +272,17 @@ bool RL::TaskEnvIO::setActorTarget(const float x_, const float y_){
 //return yaw;
 //}
 
-///////////////////////
+/////////////////////
 bool RL::TaskEnvIO::TargetCheck(ignition::math::Pose3d robot_pose_){
   float target_distance = (target_pose-robot_pose_.Pos()).Length();
   return (target_distance < paramlist->target_th)? true : false;
 }
 
-geometry_msgs::Pose RL::TaskEnvIO::findPosebyName(const std::string model_name){
+/////////////////////
+geometry_msgs::Pose RL::TaskEnvIO::findPosebyName(const std::string model_name) const {
   geometry_msgs::Pose model_state;
   auto idx_ = std::find(newStates.name.begin(), newStates.name.end(),model_name)-newStates.name.begin();
-  assert(idx_ < names.size() && target_idx_ < names.size());
+  //assert(idx_ < names.size());
   //model_state.model_name = model_name;
   model_state = newStates.pose.at(idx_);
   //model_state.twist = newStates.twist.at(idx_);
@@ -307,7 +319,7 @@ float RL::TaskEnvIO::getQuaternionYaw(const geometry_msgs::Quaternion &state_qua
   return (float)yaw;
 }
 
-ignition::math::Pose3d gazePose2IgnPose(const geometry_msgs::Pose pose_){
+ignition::math::Pose3d RL::gazePose2IgnPose(const geometry_msgs::Pose pose_) {
   return ignition::math::Pose3d(
       pose_.position.x,
       pose_.position.y,

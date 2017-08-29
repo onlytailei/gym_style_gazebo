@@ -78,6 +78,8 @@ namespace RL {
       float robot_yaw_start;
       float robot_yaw_end;
       float hard_ped_th;
+      float neighbor_range;
+      float depth_fov;
   };
 
   // Main class inherit from gazeboenvio
@@ -98,8 +100,8 @@ namespace RL {
       bool setActorTarget(const float, const float);
       bool CollisionCheck(const ignition::math::Pose3d) const;
       bool TargetCheck(const ignition::math::Pose3d);
-      geometry_msgs::Pose findPosebyName(const std::string);
-      ignition::math::Pose3d gazePose2IgnPose(const geometry_msgs::Pose);
+      geometry_msgs::Pose findPosebyName(const std::string) const;
+      ignition::math::Pose3d gazePose2IgnPose(const geometry_msgs::Pose) const;
       void actionPub(const float, const float);
       void updatePedStates(
           const geometry_msgs::Pose, 
@@ -134,7 +136,8 @@ namespace RL {
           gym_style_gazebo::SocialForce::Request&,
           gym_style_gazebo::SocialForce::Response&);
 
-      virtual float rewardCalculate(const ignition::math::Pose3d);
+      float rewardCalculate(const ignition::math::Pose3d);
+      virtual float rewardCalculate();
       virtual bool terminalCheck();
       virtual bool reset();
 
@@ -144,6 +147,8 @@ namespace RL {
           const std::string node_name="gazebo_env_io",
           const float sleeping_time=0.2);
   };
+
+  ignition::math::Pose3d gazePose2IgnPose(const geometry_msgs::Pose);
 }
 
 #endif
