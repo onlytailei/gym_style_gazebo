@@ -71,7 +71,7 @@ RL::ParamLoad::ParamLoad(ros::NodeHandlePtr rosNode_pr_):
     assert(rosNodeConstPtr->getParam("/ENABLE_CONTINUOUS_CONTROL", enable_continuous_control));
     assert(rosNodeConstPtr->getParam("/ENABLE_PED",enable_ped));
     assert(rosNodeConstPtr->getParam("/DEPTH_FOV",depth_fov));
-    assert(rosNodeConstPtr->getParam("/NEIGHBOR_RANGE",neighbor_range));
+    //assert(rosNodeConstPtr->getParam("/NEIGHBOR_RANGE",neighbor_range));
   }
 
 ////////////////////////////
@@ -108,7 +108,7 @@ bool RL::TaskEnvIO::ServiceCallback(
   if (req.reset){
     this->reset();
     // reset over until the termial and collison are all free
-    while (terminal_flag || CollisionCheck(robot_ignition_state)){
+    while (CollisionCheck(robot_ignition_state)){
       ROS_ERROR("Reset loop");
       this->reset();
     }
@@ -193,20 +193,11 @@ bool RL::TaskEnvIO::CollisionCheck(ignition::math::Pose3d robot_pose_) const{
     ignition::math::Vector3d ped_direction = ped_pose_.Pos() - robot_pose_.Pos();
     ignition::math::Angle ped_yaw = std::atan2(ped_direction.Y(), ped_direction.X()) - robot_pose_.Rot().Yaw();
     ped_yaw.Normalize();
-    if (std::fabs(ped_yaw.Radian()) < paramlist->depth_fov * 0.5 && ped_direction.Length() < paramlist->neighbor_range)
+    ROS_ERROR("ped yaw %lf, length %lf", ped_yaw.Radian(), ped_direction.Length());
+    if (std::fabs(ped_yaw.Radian()) < (paramlist->depth_fov * 0.5)/180*3.1415926 && ped_direction.Length() < paramlist->collision_th)
       return true;
   }
   return false;
-  //std::unique_lock<std::mutex> laser_scan_lock(topic_mutex);
-  //assert(laser_scan->StateVector.size()>0);
-  //std::vector<float> range_array = laser_scan->StateVector.back()->ranges;
-  //laser_scan_lock.unlock();
-  //range_array.erase(std::remove_if(range_array.begin(), 
-        //range_array.end(), 
-        //[](float x){return !std::isfinite(x);}), 
-      //range_array.end());
-  //float min_scan = *std::min_element(std::begin(range_array), std::end(range_array));
-  //return  (range_array.size()==0)? true : (min_scan< (paramlist->collision_th)?true:false);
 }
 
 
@@ -223,7 +214,6 @@ bool RL::TaskEnvIO::reset() {
   //}
   
   // Set a new position for the robot and target, if change target position, should also chagne the br of target
-  ROS_ERROR("Reset");
   const float _x = target_gen(random_engine)*(paramlist->robot_x_end-paramlist->robot_x_start)+paramlist->robot_x_start; 
   const float _y = target_gen(random_engine)*(paramlist->robot_y_end-paramlist->robot_y_start)+paramlist->robot_y_start;
   const float _yaw = target_gen(random_engine)*(paramlist->robot_yaw_end-paramlist->robot_yaw_start)+paramlist->robot_yaw_start;

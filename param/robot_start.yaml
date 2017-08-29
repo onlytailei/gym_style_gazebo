@@ -1,5 +1,5 @@
 # target threshold
-COLLISION_TH: 0.60
+COLLISION_TH: 0.4
 TARGET_TH: 1.20
 
 # constraints for the robot
