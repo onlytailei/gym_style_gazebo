@@ -110,7 +110,7 @@ namespace RL {
       
       float getQuaternionYaw(const geometry_msgs::Quaternion &) const; 
       
-      bool terminal_flag;
+      bool terminal_flag=false;
       ignition::math::Vector3d target_pose;
       ignition::math::Pose3d robot_ignition_state;
       
