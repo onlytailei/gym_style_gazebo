@@ -6,11 +6,11 @@
  ************************************************************************/
 #define _USE_MATH_DEFINES
 #include <iostream>
+#include <ignition/math.hh>
 #include <assert.h>
 #include <algorithm>
 #include <chrono>
 #include <thread>
-#include <math.h>
 #include <cmath>
 #include <time.h>
 #include <mutex>
@@ -70,6 +70,9 @@ RL::ParamLoad::ParamLoad(ros::NodeHandlePtr rosNode_pr_):
     assert(rosNodeConstPtr->getParam("/ENABLE_COLLISIOM_TERMINAL", enable_collision_terminal));
     assert(rosNodeConstPtr->getParam("/ENABLE_CONTINUOUS_CONTROL", enable_continuous_control));
     assert(rosNodeConstPtr->getParam("/ENABLE_PED",enable_ped));
+    assert(rosNodeConstPtr->getParam("/DEPTH_FOV",depth_fov));
+    assert(rosNodeConstPtr->getParam("/ACTOR_NUMBER",actor_number));
+    //assert(rosNodeConstPtr->getParam("/NEIGHBOR_RANGE",neighbor_range));
   }
 
 ////////////////////////////
@@ -84,14 +87,15 @@ RL::TaskEnvIO::TaskEnvIO(
   random_engine(0),
   dis(-1,1),  // noise generator
   target_gen(0,1),  //noise generator
+  target_pose(0,0,0),
   sleeping_time_(sleeping_time){
-    assert(rosNode_pr->getParam("/TARGET_X",target_pose.x));
-    assert(rosNode_pr->getParam("/TARGET_Y",target_pose.y));
-    // TODO check the velocity topic of tb3
+    assert(rosNode_pr->getParam("/TARGET_X",target_pose.X()));
+    assert(rosNode_pr->getParam("/TARGET_Y",target_pose.Y()));
     ActionPub = this->rosNode_pr->advertise<RL::ACTION_TYPE>("/mobile_base/commands/velocity", 1);
+    //VisPub = this->rosNode_pr->advertise<visualization_msgs::Marker>("visualization_marker", 0);
     PytorchService = this->rosNode_pr->advertiseService(service_name, &TaskEnvIO::ServiceCallback, this);
     SetModelPositionClient = this->rosNode_pr->serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state"); 
-    //if (paramlist->enable_ped){SetActorTargetClient = this->rosNode_pr->serviceClient<actor_services::SetPose>("/actor2/SetActorTarget");}
+    GetModelPositionClient = this->rosNode_pr->serviceClient<gazebo_msgs::SetModelState>("/gazebo/get_model_state"); 
   }
 
 // Set a separate callbackqueue for this service callback 
@@ -104,40 +108,36 @@ bool RL::TaskEnvIO::ServiceCallback(
   //start = std::chrono::system_clock::now();
   if (req.reset){
     this->reset();
-  }
+    ROS_ERROR("Reset the episode");
     // reset over until the termial and collison are all free
-    //while (terminal_flag || (ped_relative_distance<1.0) || CollisionCheck()){
-      //ROS_ERROR("Reset loop");
-      //this->reset();
-    //}
+    while (CollisionCheck(robot_ignition_state)){
+      ROS_ERROR("Reset loop");
+      this->reset();
+    }
+  }
   
-  // TODO find the right now localization and check the distance
-  //actionPub(req.sf_force_x, req.sf_force_y); 
+  actionPub(req.sf_force_x, req.sf_force_y); 
   
   std::this_thread::sleep_for(std::chrono::milliseconds(paramlist->action_sleep_time));
   
-  // TODO two local check functions
-  res.reward = rewardCalculate();
-
-  res.terminal = false; //terminal_flag;
+  std::unique_lock<std::mutex> state_2_lock(topic_mutex);
+  assert(state_2->StateVector.size()>0);
+  this->newStates = state_2->StateVector.back();
+  state_2_lock.unlock();
+  
+  robot_ignition_state = RL::gazePose2IgnPose(findPosebyName(RL::ROBOT_NAME));
+  
+  res.reward = rewardCalculate(robot_ignition_state);
+  res.terminal = terminal_flag;
 
   // ROS_ERROR("=================================");
   ROS_ERROR("Reward: %f", res.reward);
    
   //build image state
   std::unique_lock<std::mutex> state_1_lock(topic_mutex);
+  assert(state_1->StateVector.size()>0);
   res.depth_img = *(state_1->StateVector.back());
   state_1_lock.unlock();
-
-  //{
-    //res.state_2.layout.dim.push_back(std_msgs::MultiArrayDimension());
-    //res.state_2.layout.dim[0].size = robot_state_.size();
-    //res.state_2.layout.dim[0].stride = robot_state_.size();
-    //res.state_2.layout.dim[0].label = "roobot state";
-    //res.state_2.data.clear();
-    //res.state_2.data.reserve(robot_state_.size());
-    //res.state_2.data.insert(res.state_2.data.end(), robot_state_.begin(),robot_state_.end());
-  //}
   
   //end = std::chrono::system_clock::now();
   //std::chrono::duration<double> elapsed_seconds = end-start;
@@ -146,29 +146,34 @@ bool RL::TaskEnvIO::ServiceCallback(
   return true;
 }
 
+/////////////////////
 void RL::TaskEnvIO::actionPub(const float sf_x, const float sf_y){
-  //action_out.angular.z = action_out.angular.z*paramlist->max_ang_vel;  
-  //action_out.linear.x = action_out.linear.x*paramlist->max_lin_vel;  
-  // TODO calculate the social force and target force sum and pub the speed  
-  //ActionPub.publish(action_out);
+  ignition::math::Vector3d desired_force = this->target_pose-robot_ignition_state.Pos();
+  ignition::math::Angle desired_yaw= std::atan2(desired_force.Y(), desired_force.X())-robot_ignition_state.Rot().Yaw();
+  desired_yaw.Normalize(); 
+  double final_force_x = desired_force_param * desired_force.Length() * std::cos(desired_yaw.Radian()) - social_force_param * sf_x;
+  double final_force_y = desired_force_param * desired_force.Length() * std::sin(desired_yaw.Radian()) - social_force_param * sf_y;
+  
+  ROS_ERROR("final force x: %lf, firnal force y: %lf", final_force_x, final_force_y);
+  // TODO trans the force to robot velocity  need double check
+  geometry_msgs::Twist action_out;
+  action_out.angular.z = final_force_x * paramlist->max_ang_vel;  
+  action_out.linear.x =  final_force_y * paramlist->max_lin_vel;  
+  ActionPub.publish(action_out);
 }
 
 ///////////////////////
-float RL::TaskEnvIO::rewardCalculate(){
-  //if (TargetCheck()){
-    //terminal_flag = true;
-    //return paramlist->terminalReward;}
-  //// from 0.3 to hard_ped_th, -0.02 to -0.05
-  //else if (ped_relative_distance < (paramlist->hard_ped_th+0.3)){
-    //if (ped_relative_distance<paramlist->hard_ped_th){return paramlist->collisionReward;}
-    //else {return -0.1*(paramlist->hard_ped_th+0.3-ped_relative_distance)-0.02;}
-  //}
-  //else if (CollisionCheck()){
-    //terminal_flag = paramlist->enable_collision_terminal;
-    //return paramlist->collisionReward;}
-  //else {
-    //terminal_flag = false;
-    //return paramlist->time_discount;}
+float RL::TaskEnvIO::rewardCalculate(const ignition::math::Pose3d robot_ign_pose_){
+  if (TargetCheck(robot_ign_pose_)){
+    terminal_flag = true;
+    return paramlist->terminalReward;}
+  else if (CollisionCheck(robot_ign_pose_)){
+    terminal_flag = paramlist->enable_collision_terminal;
+    return paramlist->collisionReward;}
+  else {
+    terminal_flag = false;
+    return paramlist->time_discount;
+  }
   return 0;
 }
 
@@ -178,22 +183,27 @@ bool RL::TaskEnvIO::terminalCheck(){
 }
 
 ///////////////////////
-bool RL::TaskEnvIO::CollisionCheck() const{
-  std::unique_lock<std::mutex> laser_scan_lock(topic_mutex);
-  assert(laser_scan->StateVector.size()>0);
-  std::vector<float> range_array = laser_scan->StateVector.back()->ranges;
-  laser_scan_lock.unlock();
-  range_array.erase(std::remove_if(range_array.begin(), 
-        range_array.end(), 
-        [](float x){return !std::isfinite(x);}), 
-      range_array.end());
-  float min_scan = *std::min_element(std::begin(range_array), std::end(range_array));
-  return  (range_array.size()==0)? true : (min_scan< (paramlist->collision_th)?true:false);
+bool RL::TaskEnvIO::CollisionCheck(ignition::math::Pose3d robot_pose_) const{
+  
+  for(int i=0;i<paramlist->actor_number;i++){
+    ignition::math::Pose3d ped_pose_ = RL::gazePose2IgnPose(findPosebyName(RL::ACTOR_NAME_BASE+std::to_string(i)));
+    ignition::math::Vector3d ped_direction = ped_pose_.Pos() - robot_pose_.Pos();
+    ignition::math::Angle ped_yaw = std::atan2(ped_direction.Y(), ped_direction.X()) - robot_pose_.Rot().Yaw();
+    ped_yaw.Normalize();
+    ROS_ERROR("ped yaw %lf, length %lf", ped_yaw.Radian(), ped_direction.Length());
+    if (std::fabs(ped_yaw.Radian()) < (paramlist->depth_fov * 0.5)/180*3.1415926 && ped_direction.Length() < paramlist->collision_th){
+      ROS_ERROR("Collision confirmed!!!!");
+      return true;
+    }
+  }
+  ROS_ERROR("Not Collision!!!");
+  return false;
 }
 
 
 ///////////////////////
 bool RL::TaskEnvIO::reset() {
+  // TODO maker sure these is the robot state and target pose
 
   // Set a new position for one ped
   //if (paramlist->enable_ped){
@@ -208,11 +218,10 @@ bool RL::TaskEnvIO::reset() {
   const float _y = target_gen(random_engine)*(paramlist->robot_y_end-paramlist->robot_y_start)+paramlist->robot_y_start;
   const float _yaw = target_gen(random_engine)*(paramlist->robot_yaw_end-paramlist->robot_yaw_start)+paramlist->robot_yaw_start;
   const geometry_msgs::Quaternion _q_robot = tf::createQuaternionMsgFromYaw(_yaw);
-  //const geometry_msgs::Quaternion _q_target = tf::createQuaternionMsgFromYaw(dis(random_engine)*std::acos(-1));
   setModelPosition(_x,_y,_q_robot);
+  robot_ignition_state = RL::gazePose2IgnPose(findPosebyName(RL::ROBOT_NAME));
   //setModelPosition(target_pose.x,target_pose.y,_q_target, RL::TARGET_NAME);
-  rewardCalculate(); //check if it is terminal
-  return true;
+  return false;
 }
 
 bool RL::TaskEnvIO::setModelPosition(const float x, const float y, const geometry_msgs::Quaternion q, const std::string model_name_ ){
@@ -244,7 +253,7 @@ bool RL::TaskEnvIO::setActorTarget(const float x_, const float y_){
   return SetActorTargetClient.call(SetActorTarget_srv);
 }
 
-///////////////////////
+/////////////////////
 //double RL::TaskEnvIO::getRobotYaw(geometry_msgs::Quaternion &state_quat_) const {
 //tf::Quaternion quat;
 //tf::quaternionMsgToTF(state_quat_, quat);
@@ -253,68 +262,65 @@ bool RL::TaskEnvIO::setActorTarget(const float x_, const float y_){
 //return yaw;
 //}
 
-///////////////////////
-bool RL::TaskEnvIO::TargetCheck(){
-
-  //std::unique_lock<std::mutex> state_2_lock(topic_mutex);
-  //gazebo_msgs::ModelStates newStates = state_2->StateVector.back();
-  //state_2_lock.unlock();
-  //std::vector<std::string> names = newStates.name;
-  //auto idx_ = std::find(names.begin(), names.end(),RL::ROBOT_NAME)-names.begin();
-  ////auto target_idx_ = std::find(names.begin(), names.end(),RL::TARGET_NAME)-names.begin();
-  ////assert(idx_ < names.size() && target_idx_ < names.size());
-  //geometry_msgs::Pose pose_ = newStates.pose.at(idx_);
-  ////geometry_msgs::Pose barrel_pose_ = newStates.pose.at(target_idx_);
-  
-  //// update the ped related information
-  ////updatePedStates(pose_, newStates, names); 
-  //float target_distance = sqrt(pow((target_pose.x-pose_.position.x), 2) +
-      //pow((target_pose.y-pose_.position.y), 2));
-  //return (target_distance <paramlist->target_th)? true : false;
-  return true;
+/////////////////////
+bool RL::TaskEnvIO::TargetCheck(ignition::math::Pose3d robot_pose_){
+  float target_distance = (target_pose-robot_pose_.Pos()).Length();
+  return (target_distance < paramlist->target_th)? true : false;
 }
 
-//void RL::TaskEnvIO::updatePedStates(const geometry_msgs::Pose robot_pose_, const gazebo_msgs::ModelStates newStates_, const std::vector<std::string> names_){
-  //robot_state_.clear();
-  //std::vector<float> distance_vector;
+/////////////////////
+geometry_msgs::Pose RL::TaskEnvIO::findPosebyName(const std::string model_name) const {
+  geometry_msgs::Pose model_state;
+  auto idx_ = std::find(newStates.name.begin(), newStates.name.end(),model_name)-newStates.name.begin();
+  model_state = newStates.pose.at(idx_);
+  return model_state;
+}
 
-  //std::random_shuffle(actor_range.begin(), actor_range.end());
-  
-  ////for(int i=0;i<RL::ACTOR_NUMERS;i++){
-  //for(int i: actor_range){
+
+
+//void RL::TaskEnvIO::updatePedStates(const geometry_msgs::Pose robot_pose_, const gazebo_msgs::ModelStates newStates_, const std::vector<std::string> names_){
+
+
+  //for(int i=0;i<RL::ACTOR_NUMERS;i++){
     //auto idx_ = std::find(names_.begin(), names_.end(),RL::ACTOR_NAME_BASE+std::to_string(i))-names_.begin();
     //geometry_msgs::Pose actor_pose_ = newStates_.pose.at(idx_);
     ////geometry_msgs::Twist actor_twist = newStates_.twist.at(idx_);
     //float robot_yaw = getQuaternionYaw(robot_pose_.orientation);
-    //float actor_yaw = getQuaternionYaw(actor_pose_.orientation);
+    ////float actor_yaw = getQuaternionYaw(actor_pose_.orientation);
     //float angleref = (atan2(actor_pose_.position.y-robot_pose_.position.y, actor_pose_.position.x-robot_pose_.position.x) - robot_yaw);
     
     //float angleref_norm = (std::abs(angleref)>M_PI? -2*M_PI*std::copysign(1, angleref)+angleref:angleref);
-    //// actor relative position 
     //assert(std::abs(angleref_norm/M_PI)<=1);
-    //robot_state_.push_back(angleref_norm/M_PI);
-    //float distanceref = sqrt(pow((actor_pose_.position.x-robot_pose_.position.x), 2) + pow((actor_pose_.position.y-robot_pose_.position.y), 2));
-    //robot_state_.push_back(distanceref);
-    //robot_state_.push_back(distanceref*cos(angleref)); //xref
-    //robot_state_.push_back(distanceref*sin(angleref)); //yref
-    //distance_vector.push_back(distanceref);
-
-    //// actor moving direction
-    //float relative_yaw = (actor_yaw - robot_yaw)/M_PI - 0.5;
-    //float relative_yaw_norm = (std::abs(relative_yaw)>1? -2*std::copysign(1, relative_yaw)+relative_yaw:relative_yaw);
-    //assert(std::abs(relative_yaw_norm)<1);
-    //robot_state_.push_back(relative_yaw_norm); //yref
+    //float distanceref = std::sqrt(pow((actor_pose_.position.x-robot_pose_.position.x), 2) + pow((actor_pose_.position.y-robot_pose_.position.y), 2));
+    
+    ////TODO check collision or not based on angleref_norm and distanceref
+    ////assert(std::abs(relative_yaw_norm)<1);
   //}
-  ////find min element in all of the peds
-  
-  //ped_relative_distance = *std::min_element(std::begin(distance_vector),std::end(distance_vector));
 //}
 
-//float RL::TaskEnvIO::getQuaternionYaw(const geometry_msgs::Quaternion &state_quat_) const {
-  //tf::Quaternion quat;
-  //tf::quaternionMsgToTF(state_quat_, quat);
-  //double roll, pitch, yaw;
-  //tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
-  //return (float)yaw;
-//}
+float RL::TaskEnvIO::getQuaternionYaw(const geometry_msgs::Quaternion &state_quat_) const {
+  tf::Quaternion quat;
+  tf::quaternionMsgToTF(state_quat_, quat);
+  double roll, pitch, yaw;
+  tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+  return (float)yaw;
+}
 
+float RL::TaskEnvIO::rewardCalculate(){
+  return 0.0;
+}
+
+ignition::math::Pose3d RL::gazePose2IgnPose(const geometry_msgs::Pose pose_) {
+  return ignition::math::Pose3d(
+      pose_.position.x,
+      pose_.position.y,
+      pose_.position.z,
+      pose_.orientation.w,
+      pose_.orientation.x,
+      pose_.orientation.y,
+      pose_.orientation.z);
+}
+
+ignition::math::Quaterniond RL::yaw2Quaterniond(const ignition::math::Angle yaw_){
+  return ignition::math::Quaterniond(0,0,yaw_.Radian());
+}

@@ -41,5 +41,7 @@
 
     <!--<include file="$(find turtlebot3_teleop)/launch/turtlebot3_teleop_key.launch" />-->
     
-    <node name="main_service" pkg="gym_style_gazebo" type="task_env_service"/>
+    <!--<node name="main_service" pkg="gym_style_gazebo" type="task_env_service" launch-prefix="xterm -e gdb --args"/>-->
+    <node name="main_service" pkg="gym_style_gazebo" type="task_env_service" />
+    <node name="target2worldbr" pkg="gym_style_gazebo" type="target2worldbr.py"/>
 </launch>
