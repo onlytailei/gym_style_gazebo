@@ -119,6 +119,7 @@ bool RL::TaskEnvIO::ServiceCallback(
   std::this_thread::sleep_for(std::chrono::milliseconds(paramlist->action_sleep_time));
   
   std::unique_lock<std::mutex> state_2_lock(topic_mutex);
+  assert(state_2->StateVector.size()>0);
   this->newStates = state_2->StateVector.back();
   state_2_lock.unlock();
   
@@ -132,6 +133,7 @@ bool RL::TaskEnvIO::ServiceCallback(
    
   //build image state
   std::unique_lock<std::mutex> state_1_lock(topic_mutex);
+  assert(state_1->StateVector.size()>0);
   res.depth_img = *(state_1->StateVector.back());
   state_1_lock.unlock();
   
