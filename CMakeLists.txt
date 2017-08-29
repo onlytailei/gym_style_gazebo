@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
     image_transport
     tf
     message_generation
+    visualization_msgs
 )
 
 

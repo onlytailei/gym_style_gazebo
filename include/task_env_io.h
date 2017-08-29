@@ -92,8 +92,7 @@ namespace RL {
       ros::ServiceClient SetModelPositionClient;
       ros::ServiceClient GetModelPositionClient;
       ros::ServiceClient SetActorTargetClient;
-
-
+      
       const std::shared_ptr<ParamLoad> paramlist;
 
       bool setModelPosition(const float, const float, const geometry_msgs::Quaternion, const std::string=RL::ROBOT_NAME);
@@ -103,15 +102,15 @@ namespace RL {
       geometry_msgs::Pose findPosebyName(const std::string) const;
       ignition::math::Pose3d gazePose2IgnPose(const geometry_msgs::Pose) const;
       void actionPub(const float, const float);
-      void updatePedStates(
-          const geometry_msgs::Pose, 
-          const gazebo_msgs::ModelStates, 
-          const std::vector<std::string>);
+      
+      //void updatePedStates(
+          //const geometry_msgs::Pose, 
+          //const gazebo_msgs::ModelStates, 
+          //const std::vector<std::string>);
       
       float getQuaternionYaw(const geometry_msgs::Quaternion &) const; 
       
       bool terminal_flag;
-      float ped_relative_distance;
       ignition::math::Vector3d target_pose;
       ignition::math::Pose3d robot_ignition_state;
       
@@ -121,14 +120,10 @@ namespace RL {
       gazebo_msgs::ModelState robot_model_state;
       gazebo_msgs::ModelStates newStates;
 
-      //RL::ROBOT_STATE robot_state_;
-      cv_bridge::CvImagePtr cv_ptr;
-
       // randomizatoin
       std::mt19937 random_engine;
       std::uniform_real_distribution<> dis;
       std::uniform_real_distribution<> target_gen;
-
 
       const float sleeping_time_;
 
@@ -147,8 +142,8 @@ namespace RL {
           const std::string node_name="gazebo_env_io",
           const float sleeping_time=0.2);
   };
-
   ignition::math::Pose3d gazePose2IgnPose(const geometry_msgs::Pose);
+  ignition::math::Quaterniond yaw2Quaterniond(const ignition::math::Angle);
 }
 
 #endif

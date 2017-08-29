@@ -11,7 +11,6 @@
 #include <algorithm>
 #include <chrono>
 #include <thread>
-//#include <math.h>
 #include <cmath>
 #include <time.h>
 #include <mutex>
@@ -92,10 +91,10 @@ RL::TaskEnvIO::TaskEnvIO(
     assert(rosNode_pr->getParam("/TARGET_X",target_pose.X()));
     assert(rosNode_pr->getParam("/TARGET_Y",target_pose.Y()));
     ActionPub = this->rosNode_pr->advertise<RL::ACTION_TYPE>("/mobile_base/commands/velocity", 1);
+    //VisPub = this->rosNode_pr->advertise<visualization_msgs::Marker>("visualization_marker", 0);
     PytorchService = this->rosNode_pr->advertiseService(service_name, &TaskEnvIO::ServiceCallback, this);
     SetModelPositionClient = this->rosNode_pr->serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state"); 
     GetModelPositionClient = this->rosNode_pr->serviceClient<gazebo_msgs::SetModelState>("/gazebo/get_model_state"); 
-    //if (paramlist->enable_ped){SetActorTargetClient = this->rosNode_pr->serviceClient<actor_services::SetPose>("/actor2/SetActorTarget");}
   }
 
 // Set a separate callbackqueue for this service callback 
@@ -143,16 +142,15 @@ bool RL::TaskEnvIO::ServiceCallback(
   return true;
 }
 
-
+/////////////////////
 void RL::TaskEnvIO::actionPub(const float sf_x, const float sf_y){
-  
   ignition::math::Vector3d desired_force = this->target_pose-robot_ignition_state.Pos();
   ignition::math::Angle desired_yaw= std::atan2(desired_force.Y(), desired_force.X())-robot_ignition_state.Rot().Yaw();
   desired_yaw.Normalize(); 
-  double final_force_x = desired_force_param * desired_force.Length() * std::cos(desired_yaw.Radian())- social_force_param * sf_x;
-  double final_force_y = desired_force_param * desired_force.Length() * std::sin(desired_yaw.Radian())-social_force_param * sf_y;
+  double final_force_x = desired_force_param * desired_force.Length() * std::cos(desired_yaw.Radian()) - social_force_param * sf_x;
+  double final_force_y = desired_force_param * desired_force.Length() * std::sin(desired_yaw.Radian()) - social_force_param * sf_y;
   
-  
+  ROS_ERROR("final force x: %lf, firnal force y: %lf", final_force_x, final_force_y);
   // TODO trans the force to robot velocity  need double check
   geometry_msgs::Twist action_out;
   action_out.angular.z = final_force_x * paramlist->max_ang_vel;  
@@ -192,6 +190,7 @@ bool RL::TaskEnvIO::CollisionCheck(ignition::math::Pose3d robot_pose_) const{
     ignition::math::Pose3d ped_pose_ = RL::gazePose2IgnPose(findPosebyName(RL::ACTOR_NAME_BASE+std::to_string(i)));
     ignition::math::Vector3d ped_direction = ped_pose_.Pos() - robot_pose_.Pos();
     ignition::math::Angle ped_yaw = std::atan2(ped_direction.Y(), ped_direction.X()) - robot_pose_.Rot().Yaw();
+    ped_yaw.Normalize();
     if (std::fabs(ped_yaw.Radian()) < paramlist->depth_fov * 0.5 && ped_direction.Length() < paramlist->neighbor_range)
       return true;
   }
@@ -280,10 +279,7 @@ bool RL::TaskEnvIO::TargetCheck(ignition::math::Pose3d robot_pose_){
 geometry_msgs::Pose RL::TaskEnvIO::findPosebyName(const std::string model_name) const {
   geometry_msgs::Pose model_state;
   auto idx_ = std::find(newStates.name.begin(), newStates.name.end(),model_name)-newStates.name.begin();
-  //assert(idx_ < names.size());
-  //model_state.model_name = model_name;
   model_state = newStates.pose.at(idx_);
-  //model_state.twist = newStates.twist.at(idx_);
   return model_state;
 }
 
@@ -330,4 +326,8 @@ ignition::math::Pose3d RL::gazePose2IgnPose(const geometry_msgs::Pose pose_) {
       pose_.orientation.x,
       pose_.orientation.y,
       pose_.orientation.z);
+}
+
+ignition::math::Quaterniond RL::yaw2Quaterniond(const ignition::math::Angle yaw_){
+  return ignition::math::Quaterniond(0,0,yaw_.Radian());
 }
