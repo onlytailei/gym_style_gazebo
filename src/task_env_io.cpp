@@ -107,12 +107,12 @@ bool RL::TaskEnvIO::ServiceCallback(
   //start = std::chrono::system_clock::now();
   if (req.reset){
     this->reset();
-  }
     // reset over until the termial and collison are all free
     while (terminal_flag || CollisionCheck(robot_ignition_state)){
       ROS_ERROR("Reset loop");
       this->reset();
     }
+  }
   
   actionPub(req.sf_force_x, req.sf_force_y); 
   
@@ -223,6 +223,7 @@ bool RL::TaskEnvIO::reset() {
   //}
   
   // Set a new position for the robot and target, if change target position, should also chagne the br of target
+  ROS_ERROR("Reset");
   const float _x = target_gen(random_engine)*(paramlist->robot_x_end-paramlist->robot_x_start)+paramlist->robot_x_start; 
   const float _y = target_gen(random_engine)*(paramlist->robot_y_end-paramlist->robot_y_start)+paramlist->robot_y_start;
   const float _yaw = target_gen(random_engine)*(paramlist->robot_yaw_end-paramlist->robot_yaw_start)+paramlist->robot_yaw_start;
@@ -230,7 +231,7 @@ bool RL::TaskEnvIO::reset() {
   setModelPosition(_x,_y,_q_robot);
   robot_ignition_state = RL::gazePose2IgnPose(findPosebyName(RL::ROBOT_NAME));
   //setModelPosition(target_pose.x,target_pose.y,_q_target, RL::TARGET_NAME);
-  return true;
+  return false;
 }
 
 bool RL::TaskEnvIO::setModelPosition(const float x, const float y, const geometry_msgs::Quaternion q, const std::string model_name_ ){
