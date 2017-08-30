@@ -91,7 +91,7 @@ RL::TaskEnvIO::TaskEnvIO(
   sleeping_time_(sleeping_time){
     assert(rosNode_pr->getParam("/TARGET_X",target_pose.X()));
     assert(rosNode_pr->getParam("/TARGET_Y",target_pose.Y()));
-    ActionPub = this->rosNode_pr->advertise<RL::ACTION_TYPE>("/mobile_base/commands/velocity", 1);
+    ActionPub = this->rosNode_pr->advertise<RL::ACTION_TYPE>("/cmd_vel", 1);
     //VisPub = this->rosNode_pr->advertise<visualization_msgs::Marker>("visualization_marker", 0);
     PytorchService = this->rosNode_pr->advertiseService(service_name, &TaskEnvIO::ServiceCallback, this);
     SetModelPositionClient = this->rosNode_pr->serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state"); 
