@@ -200,8 +200,8 @@ bool RL::TaskEnvIO::CollisionCheck(ignition::math::Pose3d robot_pose_) const{
     ignition::math::Vector3d ped_direction = ped_pose_.Pos() - robot_pose_.Pos();
     ignition::math::Angle ped_yaw = std::atan2(ped_direction.Y(), ped_direction.X()) - robot_pose_.Rot().Yaw();
     ped_yaw.Normalize();
-    //ROS_ERROR("ped yaw %lf, length %lf", ped_yaw.Radian(), ped_direction.Length());
-    if (std::fabs(ped_yaw.Radian()) < (paramlist->depth_fov * 0.5)/180*3.1415926 && ped_direction.Length() < paramlist->collision_th){
+    ROS_ERROR("ped yaw %lf, length %lf", ped_yaw.Radian(), ped_direction.Length());
+    if (std::fabs(ped_yaw.Radian()) < (paramlist->depth_fov * 0.5)/180*PI && ped_direction.Length() < paramlist->collision_th){
       ROS_ERROR("Collision confirmed!!!!");
       return true;
     }
