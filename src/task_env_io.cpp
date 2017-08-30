@@ -197,8 +197,10 @@ bool RL::TaskEnvIO::terminalCheck(){
 ///////////////////////
 bool RL::TaskEnvIO::CollisionCheck(ignition::math::Pose3d robot_pose_) const{
   
+  robot_pose_.Pos().Z()=0;
   for(int i=0;i<paramlist->actor_number;i++){
     ignition::math::Pose3d ped_pose_ = RL::gazePose2IgnPose(findPosebyName(RL::ACTOR_NAME_BASE+std::to_string(i)));
+    ped_pose_.Pos().Z()=0;
     ignition::math::Vector3d ped_direction = ped_pose_.Pos() - robot_pose_.Pos();
     ignition::math::Angle ped_yaw = std::atan2(ped_direction.Y(), ped_direction.X()) - robot_pose_.Rot().Yaw();
     ped_yaw.Normalize();
