@@ -119,7 +119,6 @@ bool RL::TaskEnvIO::ServiceCallback(
     }
   }
 
-  ROS_ERROR("Begin to publish");
   actionPub(req.sf_force_x, req.sf_force_y); 
   
   std::this_thread::sleep_for(std::chrono::milliseconds(paramlist->action_sleep_time));
@@ -155,7 +154,7 @@ void RL::TaskEnvIO::actionPub(const float sf_x, const float sf_y){
   ignition::math::Vector3d desired_force = this->target_pose-robot_ignition_state.Pos();
   ignition::math::Angle desired_yaw = std::atan2(desired_force.Y(), desired_force.X())-robot_ignition_state.Rot().Yaw();
   desired_yaw.Normalize(); 
-  ROS_ERROR("desired force x: %lf, desired force y: %lf", desired_force.X(), desired_force.Y());
+  //ROS_ERROR("desired force x: %lf, desired force y: %lf", desired_force.X(), desired_force.Y());
   double final_force_x = paramlist->desired_force_factor * std::cos(desired_yaw.Radian()) + paramlist->social_force_factor * sf_x;
   double final_force_y = paramlist->desired_force_factor * std::sin(desired_yaw.Radian()) + paramlist->social_force_factor * sf_y;
  
@@ -200,13 +199,13 @@ bool RL::TaskEnvIO::CollisionCheck(ignition::math::Pose3d robot_pose_) const{
     ignition::math::Vector3d ped_direction = ped_pose_.Pos() - robot_pose_.Pos();
     ignition::math::Angle ped_yaw = std::atan2(ped_direction.Y(), ped_direction.X()) - robot_pose_.Rot().Yaw();
     ped_yaw.Normalize();
-    ROS_ERROR("ped yaw %lf, length %lf", ped_yaw.Radian(), ped_direction.Length());
+    //ROS_ERROR("ped yaw %lf, length %lf", ped_yaw.Radian(), ped_direction.Length());
     if (std::fabs(ped_yaw.Radian()) < (paramlist->depth_fov * 0.5)/180*3.1415926 && ped_direction.Length() < paramlist->collision_th){
       ROS_ERROR("Collision confirmed!!!!");
       return true;
     }
   }
-  ROS_ERROR("Not Collision!!!");
+  //ROS_ERROR("Not Collision!!!");
   return false;
 }
 
