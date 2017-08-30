@@ -80,6 +80,8 @@ namespace RL {
       float neighbor_range;
       float depth_fov;
       float actor_number;
+      float desired_force_factor;
+      float social_force_factor;
   };
 
   // Main class inherit from gazeboenvio
@@ -113,9 +115,6 @@ namespace RL {
       bool terminal_flag;
       ignition::math::Vector3d target_pose;
       ignition::math::Pose3d robot_ignition_state;
-      
-      float social_force_param;
-      float desired_force_param;
 
       gazebo_msgs::ModelState robot_model_state;
       gazebo_msgs::ModelStates newStates;

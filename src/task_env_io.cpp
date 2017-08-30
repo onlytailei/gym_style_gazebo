@@ -72,6 +72,8 @@ RL::ParamLoad::ParamLoad(ros::NodeHandlePtr rosNode_pr_):
     assert(rosNodeConstPtr->getParam("/ENABLE_PED",enable_ped));
     assert(rosNodeConstPtr->getParam("/DEPTH_FOV",depth_fov));
     assert(rosNodeConstPtr->getParam("/ACTOR_NUMBER",actor_number));
+    assert(rosNodeConstPtr->getParam("/DESIRED_FORCE_FACTOR",desired_force_factor));
+    assert(rosNodeConstPtr->getParam("/SOCIAL_FORCE_FACTOR",social_force_factor));
     //assert(rosNodeConstPtr->getParam("/NEIGHBOR_RANGE",neighbor_range));
   }
 
@@ -150,10 +152,11 @@ bool RL::TaskEnvIO::ServiceCallback(
 /////////////////////
 void RL::TaskEnvIO::actionPub(const float sf_x, const float sf_y){
   ignition::math::Vector3d desired_force = this->target_pose-robot_ignition_state.Pos();
+  ROS_ERROR("desired force x: %lf, desired force y: %lf", desired_force.X(), desired_force.Y());
   ignition::math::Angle desired_yaw= std::atan2(desired_force.Y(), desired_force.X())-robot_ignition_state.Rot().Yaw();
   desired_yaw.Normalize(); 
-  double final_force_x = desired_force_param * desired_force.Length() * std::cos(desired_yaw.Radian()) - social_force_param * sf_x;
-  double final_force_y = desired_force_param * desired_force.Length() * std::sin(desired_yaw.Radian()) - social_force_param * sf_y;
+  double final_force_x = paramlist->desired_force_factor * desired_force.Length() * std::cos(desired_yaw.Radian()) - paramlist->social_force_factor * sf_x;
+  double final_force_y = paramlist->desired_force_factor * desired_force.Length() * std::sin(desired_yaw.Radian()) - paramlist->social_force_factor * sf_y;
   
   ROS_ERROR("final force x: %lf, firnal force y: %lf", final_force_x, final_force_y);
   // TODO trans the force to robot velocity  need double check
