@@ -115,7 +115,8 @@ bool RL::TaskEnvIO::ServiceCallback(
       this->reset();
     }
   }
-  
+
+  ROS_ERROR("Begin to publish");
   actionPub(req.sf_force_x, req.sf_force_y); 
   
   std::this_thread::sleep_for(std::chrono::milliseconds(paramlist->action_sleep_time));
