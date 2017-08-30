@@ -161,11 +161,12 @@ void RL::TaskEnvIO::actionPub(const float sf_x, const float sf_y){
   ignition::math::Angle final_direction = std::atan2(final_force_y, final_force_x);
   final_direction.Normalize();  
  
-  ROS_ERROR("final force x: %lf, firnal force y: %lf", final_force_x, final_force_y);
+  //ROS_ERROR("final force x: %lf, final force y: %lf", final_force_x, final_force_y);
+  ROS_ERROR("final raw angle: %lf", final_direction.Radian());
 
   geometry_msgs::Twist action_out;
   action_out.angular.z = final_direction.Radian() * paramlist->max_ang_vel;  
-  action_out.linear.x =  final_force_x * paramlist->max_lin_vel; 
+  action_out.linear.x = final_force_x * paramlist->max_lin_vel; 
   action_out.linear.x = action_out.linear.x < 0.2 ? 0.2: action_out.linear.x; 
   action_out.linear.x = action_out.linear.x > 1 ? 1: action_out.linear.x; 
   ActionPub.publish(action_out);
