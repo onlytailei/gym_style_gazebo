@@ -7,6 +7,7 @@
     <param name="BASE_WORLD" type="string" value="empty.world" /> 
     <node name="create_world" pkg="actor_services" type="passing_wall.py"/>
     <node name="tfodom2defaultworld" pkg="turtlebot3_social" type="tfodom2defaultworld.py"/>
+    <node name="tfped2defaultworld" pkg="turtlebot3_social" type="tfped2defaultworld.py"/>
 
     <arg name="world_file"  default="$(find actor_services)/worlds/ped_world.world"/>
     <arg name="gui" default="false"/>
