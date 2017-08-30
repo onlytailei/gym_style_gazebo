@@ -32,6 +32,7 @@
 
 //protect the read and write for topic vectors
 std::mutex topic_mutex;
+#define PI 3.14159265359
 
 /// statecallback function
 template<typename topicType>
@@ -152,17 +153,22 @@ bool RL::TaskEnvIO::ServiceCallback(
 /////////////////////
 void RL::TaskEnvIO::actionPub(const float sf_x, const float sf_y){
   ignition::math::Vector3d desired_force = this->target_pose-robot_ignition_state.Pos();
-  ROS_ERROR("desired force x: %lf, desired force y: %lf", desired_force.X(), desired_force.Y());
-  ignition::math::Angle desired_yaw= std::atan2(desired_force.Y(), desired_force.X())-robot_ignition_state.Rot().Yaw();
+  ignition::math::Angle desired_yaw = std::atan2(desired_force.Y(), desired_force.X())-robot_ignition_state.Rot().Yaw();
   desired_yaw.Normalize(); 
-  double final_force_x = paramlist->desired_force_factor * desired_force.Length() * std::cos(desired_yaw.Radian()) - paramlist->social_force_factor * sf_x;
-  double final_force_y = paramlist->desired_force_factor * desired_force.Length() * std::sin(desired_yaw.Radian()) - paramlist->social_force_factor * sf_y;
-  
+  ROS_ERROR("desired force x: %lf, desired force y: %lf", desired_force.X(), desired_force.Y());
+  double final_force_x = paramlist->desired_force_factor * std::cos(desired_yaw.Radian()) + paramlist->social_force_factor * sf_x;
+  double final_force_y = paramlist->desired_force_factor * std::sin(desired_yaw.Radian()) + paramlist->social_force_factor * sf_y;
+ 
+  ignition::math::Angle final_direction = std::atan2(final_force_y, final_force_x);
+  final_direction.Normalize();  
+ 
   ROS_ERROR("final force x: %lf, firnal force y: %lf", final_force_x, final_force_y);
-  // TODO trans the force to robot velocity  need double check
+
   geometry_msgs::Twist action_out;
-  action_out.angular.z = final_force_x * paramlist->max_ang_vel;  
-  action_out.linear.x =  final_force_y * paramlist->max_lin_vel;  
+  action_out.angular.z = final_direction.Radian() * paramlist->max_ang_vel;  
+  action_out.linear.x =  final_force_x * paramlist->max_lin_vel; 
+  action_out.linear.x = action_out.linear.x < 0.2 ? 0.2: action_out.linear.x; 
+  action_out.linear.x = action_out.linear.x > 1 ? 1: action_out.linear.x; 
   ActionPub.publish(action_out);
 }
 
