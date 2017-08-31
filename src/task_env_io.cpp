@@ -117,6 +117,7 @@ bool RL::TaskEnvIO::ServiceCallback(
       ROS_ERROR("Reset loop");
       this->reset();
     }
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
   
   if (!req.reset){
@@ -164,7 +165,7 @@ void RL::TaskEnvIO::actionPub(const float sf_x, const float sf_y){
   final_direction.Normalize();  
  
   //ROS_ERROR("final force x: %lf, final force y: %lf", final_force_x, final_force_y);
-  ROS_ERROR("final raw angle: %lf", final_direction.Radian());
+  //ROS_ERROR("final raw angle: %lf", final_direction.Radian());
 
   geometry_msgs::Twist action_out;
   action_out.angular.z = final_direction.Radian() * paramlist->max_ang_vel;  
@@ -204,37 +205,30 @@ bool RL::TaskEnvIO::CollisionCheck(ignition::math::Pose3d robot_pose_) const{
     ignition::math::Vector3d ped_direction = ped_pose_.Pos() - robot_pose_.Pos();
     ignition::math::Angle ped_yaw = std::atan2(ped_direction.Y(), ped_direction.X()) - robot_pose_.Rot().Yaw();
     ped_yaw.Normalize();
-    ROS_ERROR("ped yaw %lf, length %lf", ped_yaw.Radian(), ped_direction.Length());
+    //ROS_ERROR("ped yaw %lf, length %lf", ped_yaw.Radian(), ped_direction.Length());
     if (std::fabs(ped_yaw.Radian()) < (paramlist->depth_fov * 0.5)/180*PI && ped_direction.Length() < paramlist->collision_th){
-      ROS_ERROR("Collision confirmed!!!!");
+      ROS_ERROR("===========Collision confirmed!!!!============");
       return true;
     }
   }
-  //ROS_ERROR("Not Collision!!!");
   return false;
 }
 
-
 ///////////////////////
 bool RL::TaskEnvIO::reset() {
-  // TODO maker sure these is the robot state and target pose
-
-  // Set a new position for one ped
-  //if (paramlist->enable_ped){
-    //float target_x = target_gen(random_engine)*7-3.5; 
-    //float target_y = target_gen(random_engine)*7-3.5;
-    //setActorTarget(std::copysign(target_x, dis(random_engine)),
-        //std::copysign(target_y, dis(random_engine)));
-  //}
   
-  // Set a new position for the robot and target, if change target position, should also chagne the br of target
+  std::unique_lock<std::mutex> state_2_lock(topic_mutex);
+  assert(state_2->StateVector.size()>0);
+  this->newStates = state_2->StateVector.back();
+  state_2_lock.unlock();
+
   const float _x = target_gen(random_engine)*(paramlist->robot_x_end-paramlist->robot_x_start)+paramlist->robot_x_start; 
   const float _y = target_gen(random_engine)*(paramlist->robot_y_end-paramlist->robot_y_start)+paramlist->robot_y_start;
   const float _yaw = target_gen(random_engine)*(paramlist->robot_yaw_end-paramlist->robot_yaw_start)+paramlist->robot_yaw_start;
   const geometry_msgs::Quaternion _q_robot = tf::createQuaternionMsgFromYaw(_yaw);
   setModelPosition(_x,_y,_q_robot);
+  
   robot_ignition_state = RL::gazePose2IgnPose(findPosebyName(RL::ROBOT_NAME));
-  //setModelPosition(target_pose.x,target_pose.y,_q_target, RL::TARGET_NAME);
   return false;
 }
 
