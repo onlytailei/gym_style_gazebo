@@ -1,12 +1,12 @@
 # target threshold
 COLLISION_TH: 0.6
-TARGET_TH: 0.5
+TARGET_TH: 0.8
 
 # constraints for the robot
 MAX_LINEAR_VAL: 1
 MAX_ANGULAR_VAL: 2
 
-TARGET_X: -2.0
+TARGET_X: -1.0
 TARGET_Y: -0.0
 
 ENABLE_COLLISIOM_TERMINAL: true
@@ -20,8 +20,8 @@ TERMINAL_REWARD: 0  # arrive
 COLLISION_REWARD: -0.05    # collision happen : collision
 TIME_DISCOUNT: 0   # normal just discount
 
-ROBOT_X_START: 3
-ROBOT_X_END: 3.1
+ROBOT_X_START: 4
+ROBOT_X_END: 4.1
 ROBOT_Y_START: -0.1
 ROBOT_Y_END: 0.1
 ROBOT_YAW_START: 3.15
