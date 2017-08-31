@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 
 <launch>
-    <rosparam command="load" file="$(find turtlebot3_social)/param/forceFactors.yaml" />   
+    <rosparam command="load" file="$(find gym_style_gazebo)/param/forceFactors.yaml" />   
     <rosparam command="load" file="$(find gym_style_gazebo)/param/robot_start.yaml" />   
     <param name="TB3_AS_ACTOR" type="bool" value="true" /> 
     <param name="BASE_WORLD" type="string" value="empty.world" /> 
