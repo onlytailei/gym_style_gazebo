@@ -235,7 +235,7 @@ bool RL::TaskEnvIO::reset() {
     const geometry_msgs::Quaternion _q_ped = tf::createQuaternionMsgFromYaw(ped_yaw);
     this->rosNode_pr->getParam("/TARGET_X_ACTOR"+std::to_string(i), ped_x);
     this->rosNode_pr->getParam("/TARGET_X_ACTOR"+std::to_string(i), ped_y);
-    setModelPosition(ped_x, ped_y, _q_ped, "ACTOR"+std::to_string(i)); 
+    setModelPosition(ped_x, ped_y, _q_ped, "actor"+std::to_string(i)); 
   }
 
   robot_ignition_state = RL::gazePose2IgnPose(findPosebyName(RL::ROBOT_NAME));
