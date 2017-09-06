@@ -7,12 +7,12 @@
     
     <param name="BASE_WORLD" type="string" value="empty.world" /> <!-- empty or corridor3m corridor4m crossing3m crossing4m-->
     <param name="ACTOR_NUMBER" type="int" value="3" />
-    <param name="TARGET_X"  value="-3.0" />
-    <param name="TARGET_Y"  value="0.5" />
     <param name="ROBOT_X_START" value="2.5" />
     <param name="ROBOT_X_END" value="2.6" />
-    <param name="ROBOT_X_START" value="0.0" />
-    <param name="ROBOT_Y_END" value="0.0" />
+    <param name="ROBOT_X_START" value="0.5" />
+    <param name="ROBOT_Y_END" value="0.5" />
+    <param name="TARGET_X"  value="-3.0" />
+    <param name="TARGET_Y"  value="0.5" />
     
     <node name="create_world" pkg="actor_services" type="passing_wall_3.py"/>
     <node name="tfodom2defaultworld" pkg="turtlebot3_social" type="tfodom2defaultworld.py"/>
