@@ -233,8 +233,9 @@ bool RL::TaskEnvIO::reset() {
     float ped_y;
     const float ped_yaw = target_gen(random_engine)*(paramlist->robot_yaw_end-paramlist->robot_yaw_start)+paramlist->robot_yaw_start+PI;
     const geometry_msgs::Quaternion _q_ped = tf::createQuaternionMsgFromYaw(ped_yaw);
-    this->rosNode_pr->getParam("/TARGET_X_ACTOR"+std::to_string(i), ped_x);
-    this->rosNode_pr->getParam("/TARGET_X_ACTOR"+std::to_string(i), ped_y);
+    assert(this->rosNode_pr->getParam("/TARGET_X_ACTOR_"+std::to_string(i), ped_x));
+    assert(this->rosNode_pr->getParam("/TARGET_Y_ACTOR_"+std::to_string(i), ped_y));
+    ROS_ERROR("actor %d, x: %f, y: %f",i, ped_x, ped_y);
     setModelPosition(ped_x, ped_y, _q_ped, "actor"+std::to_string(i)); 
   }
 
