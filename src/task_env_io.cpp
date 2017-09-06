@@ -137,7 +137,7 @@ bool RL::TaskEnvIO::ServiceCallback(
   res.terminal = terminal_flag;
 
   // ROS_ERROR("=================================");
-  ROS_ERROR("Reward: %f", res.reward);
+  //ROS_ERROR("Reward: %f", res.reward);
    
   //build image state
   std::unique_lock<std::mutex> state_1_lock(topic_mutex);
