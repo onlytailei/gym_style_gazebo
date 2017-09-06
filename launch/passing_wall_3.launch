@@ -4,19 +4,17 @@
     <rosparam command="load" file="$(find gym_style_gazebo)/param/forceFactors.yaml" />   
     <rosparam command="load" file="$(find gym_style_gazebo)/param/robot_start.yaml" />   
     <param name="TB3_AS_ACTOR" type="bool" value="true" /> 
-    <param name="BASE_WORLD" type="string" value="corridor4m.world" /> 
-   
-    <param name="ACTOR_NUMBER" type="int" value="1" />
-    <param name="ROBOT_X_START" value="-5.0" />
-    <param name="ROBOT_X_END" value="-5.1" />
-    <param name="ROBOT_Y_START" value="0.0" />
-    <param name="ROBOT_Y_END" value="0.0" />
-    <param name="ROBOT_YAW_START" value="0.0" />
-    <param name="ROBOT_YAW_END" value="0.1" />
-    <param name="TARGET_X"  value="5.0" />
-    <param name="TARGET_Y"  value="0.0" />
     
-    <node name="create_world" pkg="actor_services" type="overtaking_wall_1.py"/>
+    <param name="BASE_WORLD" type="string" value="corridor4m.world" /> <!-- empty or corridor3m corridor4m crossing3m crossing4m-->
+    <param name="ACTOR_NUMBER" type="int" value="3" />
+    <param name="ROBOT_X_START" value="2.5" />
+    <param name="ROBOT_X_END" value="2.6" />
+    <param name="ROBOT_Y_START" value="0.5" />
+    <param name="ROBOT_Y_END" value="0.5" />
+    <param name="TARGET_X"  value="-3.0" />
+    <param name="TARGET_Y"  value="0.5" />
+    
+    <node name="create_world" pkg="actor_services" type="passing_wall_3.py"/>
     <node name="tfodom2defaultworld" pkg="turtlebot3_social" type="tfodom2defaultworld.py"/>
     <node name="tfped2defaultworld" pkg="turtlebot3_social" type="tfped2defaultworld.py"/>
 
