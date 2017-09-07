@@ -117,7 +117,7 @@ bool RL::TaskEnvIO::ServiceCallback(
       ROS_ERROR("Reset loop");
       this->reset();
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   }
   
   if (!req.reset){
@@ -169,7 +169,9 @@ void RL::TaskEnvIO::actionPub(const float sf_x, const float sf_y){
 
   geometry_msgs::Twist action_out;
   action_out.angular.z = final_direction.Radian() * paramlist->max_ang_vel;  
-  action_out.linear.x = final_force_x * paramlist->max_lin_vel; 
+  action_out.linear.x = final_force_x * paramlist->max_lin_vel;
+  action_out.angular.z = action_out.angular.z<-1.0?-1.0:action_out.angular.z;  
+  action_out.angular.z = action_out.angular.z> 1.0? 1.0:action_out.angular.z;  
   action_out.linear.x = action_out.linear.x < 0.2 ? 0.2: action_out.linear.x; 
   action_out.linear.x = action_out.linear.x > 1 ? 1: action_out.linear.x; 
   ActionPub.publish(action_out);
@@ -216,6 +218,11 @@ bool RL::TaskEnvIO::CollisionCheck(ignition::math::Pose3d robot_pose_) const{
 
 ///////////////////////
 bool RL::TaskEnvIO::reset() {
+
+  geometry_msgs::Twist action_out;
+  action_out.angular.z = 0;
+  action_out.linear.x = 0;
+  ActionPub.publish(action_out);
   
   std::unique_lock<std::mutex> state_2_lock(topic_mutex);
   assert(state_2->StateVector.size()>0);
