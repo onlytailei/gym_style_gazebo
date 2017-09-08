@@ -145,6 +145,13 @@ bool RL::TaskEnvIO::ServiceCallback(
   res.depth_img = *(state_1->StateVector.back());
   state_1_lock.unlock();
   
+
+  ignition::math::Vector3d desired_force = this->target_pose-robot_ignition_state.Pos();
+  ignition::math::Angle desired_yaw = std::atan2(desired_force.Y(), desired_force.X())-robot_ignition_state.Rot().Yaw();
+  desired_yaw.Normalize(); 
+  res.desired_force_x = std::cos(desired_yaw.Radian()); 
+  res.desired_force_y = std::sin(desired_yaw.Radian()); 
+
   //end = std::chrono::system_clock::now();
   //std::chrono::duration<double> elapsed_seconds = end-start;
   //ROS_ERROR("time: %f", elapsed_seconds.count());
@@ -154,10 +161,9 @@ bool RL::TaskEnvIO::ServiceCallback(
 
 /////////////////////
 void RL::TaskEnvIO::actionPub(const float sf_x, const float sf_y){
-  ignition::math::Vector3d desired_force = this->target_pose-robot_ignition_state.Pos();
-  ignition::math::Angle desired_yaw = std::atan2(desired_force.Y(), desired_force.X())-robot_ignition_state.Rot().Yaw();
-  desired_yaw.Normalize(); 
-  //ROS_ERROR("desired force x: %lf, desired force y: %lf", desired_force.X(), desired_force.Y());
+  //ignition::math::Vector3d desired_force = this->target_pose-robot_ignition_state.Pos();
+  //ignition::math::Angle desired_yaw = std::atan2(desired_force.Y(), desired_force.X())-robot_ignition_state.Rot().Yaw();
+  //desired_yaw.Normalize(); 
   double final_force_x = paramlist->desired_force_factor * std::cos(desired_yaw.Radian()) + paramlist->social_force_factor * sf_x;
   double final_force_y = paramlist->desired_force_factor * std::sin(desired_yaw.Radian()) + paramlist->social_force_factor * sf_y;
  

@@ -4,5 +4,7 @@ bool reset
 
 -----
 sensor_msgs/Image depth_img
+float32 desired_force_x
+float32 desired_force_y
 bool terminal
 float32 reward
