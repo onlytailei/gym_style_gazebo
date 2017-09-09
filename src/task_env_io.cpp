@@ -117,7 +117,6 @@ bool RL::TaskEnvIO::ServiceCallback(
       ROS_ERROR("Reset loop");
       this->reset();
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   }
   
   if (!req.reset){
@@ -155,6 +154,12 @@ bool RL::TaskEnvIO::ServiceCallback(
   //end = std::chrono::system_clock::now();
   //std::chrono::duration<double> elapsed_seconds = end-start;
   //ROS_ERROR("time: %f", elapsed_seconds.count());
+  if (res.terminal){
+    geometry_msgs::Twist action_out;
+    action_out.angular.z = 0;
+    action_out.linear.x = 0;
+    ActionPub.publish(action_out);
+  }
 
   return true;
 }
@@ -174,8 +179,8 @@ void RL::TaskEnvIO::actionPub(const float sf_x, const float sf_y){
   //ROS_ERROR("final raw angle: %lf", final_direction.Radian());
 
   geometry_msgs::Twist action_out;
-  action_out.linear.x = sf_x;
-  action_out.angular.z = sf_y;  
+  action_out.linear.x = sf_x * paramlist->max_lin_vel;
+  action_out.angular.z = sf_y * paramlist->max_ang_vel;  
   //action_out.angular.z = action_out.angular.z<-1.0?-1.0:action_out.angular.z;  
   //action_out.angular.z = action_out.angular.z> 1.0? 1.0:action_out.angular.z;  
   //action_out.linear.x = action_out.linear.x < 0.2 ? 0.2: action_out.linear.x; 
