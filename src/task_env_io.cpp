@@ -164,22 +164,22 @@ void RL::TaskEnvIO::actionPub(const float sf_x, const float sf_y){
   //ignition::math::Vector3d desired_force = this->target_pose-robot_ignition_state.Pos();
   //ignition::math::Angle desired_yaw = std::atan2(desired_force.Y(), desired_force.X())-robot_ignition_state.Rot().Yaw();
   //desired_yaw.Normalize(); 
-  double final_force_x = paramlist->desired_force_factor * std::cos(desired_yaw.Radian()) + paramlist->social_force_factor * sf_x;
-  double final_force_y = paramlist->desired_force_factor * std::sin(desired_yaw.Radian()) + paramlist->social_force_factor * sf_y;
+  //double final_force_x = paramlist->desired_force_factor * std::cos(desired_yaw.Radian()) + paramlist->social_force_factor * sf_x;
+  //double final_force_y = paramlist->desired_force_factor * std::sin(desired_yaw.Radian()) + paramlist->social_force_factor * sf_y;
  
-  ignition::math::Angle final_direction = std::atan2(final_force_y, final_force_x);
-  final_direction.Normalize();  
+  //ignition::math::Angle final_direction = std::atan2(final_force_y, final_force_x);
+  //final_direction.Normalize();  
  
   //ROS_ERROR("final force x: %lf, final force y: %lf", final_force_x, final_force_y);
   //ROS_ERROR("final raw angle: %lf", final_direction.Radian());
 
   geometry_msgs::Twist action_out;
-  action_out.angular.z = final_direction.Radian() * paramlist->max_ang_vel;  
-  action_out.linear.x = final_force_x * paramlist->max_lin_vel;
-  action_out.angular.z = action_out.angular.z<-1.0?-1.0:action_out.angular.z;  
-  action_out.angular.z = action_out.angular.z> 1.0? 1.0:action_out.angular.z;  
-  action_out.linear.x = action_out.linear.x < 0.2 ? 0.2: action_out.linear.x; 
-  action_out.linear.x = action_out.linear.x > 1 ? 1: action_out.linear.x; 
+  action_out.linear.x = sf_x;
+  action_out.angular.z = sf_y;  
+  //action_out.angular.z = action_out.angular.z<-1.0?-1.0:action_out.angular.z;  
+  //action_out.angular.z = action_out.angular.z> 1.0? 1.0:action_out.angular.z;  
+  //action_out.linear.x = action_out.linear.x < 0.2 ? 0.2: action_out.linear.x; 
+  //action_out.linear.x = action_out.linear.x > 1 ? 1: action_out.linear.x; 
   ActionPub.publish(action_out);
 }
 
