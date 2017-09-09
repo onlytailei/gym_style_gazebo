@@ -17,7 +17,7 @@ ACTION_SLEEP_TIME: 50
 
 # reward related
 TERMINAL_REWARD: 0  # arrive  
-COLLISION_REWARD: -0.05    # collision happen : collision
+COLLISION_REWARD: -1.0    # collision happen : collision
 TIME_DISCOUNT: 0   # normal just discount
 
 ROBOT_X_START: 4
