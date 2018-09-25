@@ -16,10 +16,14 @@ gazebo_env_io/pytorch_io_service
 This is the reference implementation of the plugins and for the paper **Socially-compliant Navigation through Raw Depth Inputs with Generative Adversarial Imitation Learning**. 
 If it helps your research, please cite:
 ```
-@article{tai2017socially,
-  title={Socially-compliant Navigation through Raw Depth Inputs with Generative Adversarial Imitation Learning},
-  author={Tai, Lei and Zhang, Jingwei and Liu, Ming and Burgard, Wolfram},
-  journal={arXiv preprint arXiv:1710.02543},
-  year={2017}
+@inproceedings{tai2018social,
+    author={L. Tai and J. Zhang and M. Liu and W. Burgard},
+    booktitle={2018 IEEE International Conference on Robotics and Automation (ICRA)}, 
+    title={Socially Compliant Navigation Through Raw Depth Inputs with Generative Adversarial Imitation Learning}, 
+    year={2018}, 
+    pages={1111-1117}, 
+    doi={10.1109/ICRA.2018.8460968}, 
+    ISSN={2577-087X}, 
+    month={May},
 }
 ```
